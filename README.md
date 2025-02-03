@@ -14,7 +14,7 @@
 - [License](#license)
 
 ## Introduction
-This project provides a Python wrapper for the **official** Wiener Netze Smart Meter API (WN_SMART_METER_API), which is published by Wiener Stadtwerke through their [developer portal](https://api-portal.wienerstadtwerke.at/). Unlike other approaches (notably [fleinze’s vienna-smartmeter API Python wrapper](https://github.com/fleinze/vienna-smartmeter) and [DarwinsBuddy’s HomeAssistant Integration](https://github.com/DarwinsBuddy/WienerNetzeSmartmeter)) that rely on web-login recreation and can fail due to captchas, rate limiting, or other website changes, this wrapper uses the official programmatic endpoint.
+This project provides a Python wrapper for the **official** Wiener Netze Smart Meter API (WN_SMART_METER_API), which is published by Wiener Stadtwerke through their [developer portal](https://api-portal.wienerstadtwerke.at/). Unlike other approaches (notably [fleinze’s vienna-smartmeter API Python wrapper](https://github.com/fleinze/vienna-smartmeter) and [DarwinsBuddy’s HomeAssistant Integration](https://github.com/DarwinsBuddy/WienerNetzeSmartmeter)) that rely on web-login recreation and can fail due to captchas, rate limiting, or other website changes, this wrapper uses the official endpoint.
 
 By following the instructions below, you can acquire the necessary API credentials (client ID, client secret, and API key) from Wiener Stadtwerke’s developer portal and start fetching your power usage data .
 
