@@ -29,9 +29,9 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/tschoerk/wiener-netze-smart-meter-api#readme"
-Issues = "https://github.com/tschoerk/wiener-netze-smart-meter-api/issues"
-Source = "https://github.com/tschoerk/wiener-netze-smart-meter-api"
+Documentation = "https://github.com/tschoerk/Wiener-Netze-Smart-Meter-API#readme"
+Issues = "https://github.com/tschoerk/Wiener-Netze-Smart-Meter-API/issues"
+Source = "https://github.com/tschoerk/Wiener-Netze-Smart-Meter-API"
 
 [tool.hatch.version]
 path = "src/wiener_netze_smart_meter_api/__about__.py"
