@@ -22,7 +22,7 @@ By following the instructions below, you can acquire the necessary API credentia
 
 1. Create an account at the [Developer Portal of the Wiener Stadtwerke](https://api-portal.wienerstadtwerke.at/)
 2. Create an application [here](https://api-portal.wienerstadtwerke.at/portal/applications/create) for the WN_SMART_METER_API
-3. When the application is released you will get an e-mail from Wiener Stadtwerke with the client credentials, which consist of **API-key**, client-ID and client-secret. The API-key will be needed for usage.
+3. When the application is released you will get an e-mail from API Developer Portal that the application is approved. The **API-key** is found in the details of the newly created [application](https://api-portal.wienerstadtwerke.at/portal/applications).
 4. Write an e-mail to the [Smart Meter Portal Support](mailto:support.sm-portal@wienit.at?subject=Anfrage%20zur%20%C3%9Cberpr%C3%BCfung%20und%20Fertigstellung%20der%20Anmeldung%20zur%20Smart%20Meter-Public%20API&body=Ich%20bitte%20um%20%C3%9Cberpr%C3%BCfung%20und%20Fertigstellung%20der%20Anmeldung%20zur%20Smart%20Meter-Public%20API%0A%0AApplikationsname%20%28aus%20dem%20WSTW%20Developer-Portal%29%3A%20%5BName%20of%20application%20created%20at%20the%20Developer%20Portal%20of%20the%20Wiener%20Stadtwerke%5D%0A%0ASmart%20Meter-Portal%20E-Mail-Adresse%3A%20%5BE-mail%20address%20of%20Smart%20Meter%20Portal%20user%5D) to connect the application with the Smart Meter Portal user. It usually takes 1-2 weeks to get a response.
 5. Afterwards the **client-ID** and **client-secret** can be found in the [settings](https://smartmeter-business.wienernetze.at/einstellungen) of the Smart Meter-Businessportal. 
 
