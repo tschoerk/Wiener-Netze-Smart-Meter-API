@@ -45,7 +45,7 @@ smart_meters = client.get_anlagendaten()
 print("All Smart Meters:", smart_meters)
 
 # Fetch specific smart meter details
-smart_meter_number = "AT0010000000000000001000006432436"
+smart_meter_number = "AT0010000000000000001000000000000"
 specific_meter = client.get_anlagendaten(smart_meter_number)
 print("Specific Smart Meter:", specific_meter)
 
