@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "wiener-netze-smart-meter-api"
 dynamic = ["version"]
-description = 'A Python API client for the official Wiener Netze Smart Meter API'
+description = 'A Python wrapper for the official Wiener Netze Smart Meter API (WN_SMART_METER_API)'
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
