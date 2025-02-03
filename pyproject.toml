@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wiener-netze-smart-meter-api"
+dynamic = ["version"]
+description = 'A Python API client for the official Wiener Netze Smart Meter API'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "tschoerk", email = "tschoerk@proton.me" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+	"requests>=2.32.3"
+]
+
+[project.urls]
+Documentation = "https://github.com/tschoerk/wiener-netze-smart-meter-api#readme"
+Issues = "https://github.com/tschoerk/wiener-netze-smart-meter-api/issues"
+Source = "https://github.com/tschoerk/wiener-netze-smart-meter-api"
+
+[tool.hatch.version]
+path = "src/wiener_netze_smart_meter_api/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/wiener_netze_smart_meter_api tests}"
+
+[tool.coverage.run]
+source_pkgs = ["wiener_netze_smart_meter_api", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/wiener_netze_smart_meter_api/__about__.py",
+]
+
+[tool.coverage.paths]
+wiener_netze_smart_meter_api = ["src/wiener_netze_smart_meter_api", "*/wiener-netze-smart-meter-api/src/wiener_netze_smart_meter_api"]
+tests = ["tests", "*/wiener-netze-smart-meter-api/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
