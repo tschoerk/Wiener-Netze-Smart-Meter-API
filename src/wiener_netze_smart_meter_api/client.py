@@ -18,6 +18,7 @@ class WNAPIClient:
         self.token_expiry = 0  # UNIX timestamp when the token expires
         self.max_retries = max_retries  # Max retry attempts
         self.retry_delay = retry_delay  # Delay between retries in seconds
+        self.session = requests.Session()  # New persistent session
 
     def get_bearer_token(self) -> str:
         """
@@ -37,7 +38,7 @@ class WNAPIClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                response = requests.post(url, data=data, headers=headers, timeout=10)
+                response = self.session.post(url, data=data, headers=headers, timeout=10)
                 response.raise_for_status()
                 token_data = response.json()
 
@@ -76,9 +77,9 @@ class WNAPIClient:
         for attempt in range(1, self.max_retries + 1):
             try:
                 if method.upper() == "GET":
-                    response = requests.get(endpoint, headers=headers, timeout=10)
+                    response = self.session.get(endpoint, headers=headers, timeout=10)
                 elif method.upper() == "POST":
-                    response = requests.post(endpoint, headers=headers, json=data, timeout=10)
+                    response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
                 else:
                     logging.error(f"Unsupported HTTP method: {method}")
                     return None
