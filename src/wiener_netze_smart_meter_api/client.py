@@ -40,8 +40,11 @@ class WNAPIClient:
             try:
                 response = self.session.post(url, data=data, headers=headers, timeout=10)
                 response.raise_for_status()
-                token_data = response.json()
-
+                try:
+                    token_data = response.json()
+                except ValueError as json_err:
+                    logging.exception("JSON decoding failed for token response")
+                    raise json_err
                 self.token = token_data.get("access_token")
                 expires_in = token_data.get("expires_in", 300)  # Default to 300 sec
                 self.token_expiry = time.time() + expires_in - 10  # Buffer of 10 sec
@@ -49,9 +52,8 @@ class WNAPIClient:
                 logging.info(f"Successfully obtained Bearer Token (Expires in {expires_in} sec)")
                 return self.token
 
-            except RequestException as e:
-                logging.error(f"Token request failed (Attempt {attempt}/{self.max_retries}): {e}")
-
+            except RequestException:
+                logging.exception(f"Token request failed (Attempt {attempt}/{self.max_retries})")
                 if attempt < self.max_retries:
                     logging.info(f"Retrying in {self.retry_delay} seconds...")
                     time.sleep(self.retry_delay)
@@ -66,7 +68,7 @@ class WNAPIClient:
         """
         token = self.get_bearer_token()
         if not token:
-            logging.error("No valid token available, request aborted.")
+            logging.exception("No valid token available, request aborted.")
             return None
 
         headers = {
@@ -88,8 +90,8 @@ class WNAPIClient:
                 logging.info(f"Successful {method} request to {endpoint}")
                 return response.json()
 
-            except requests.HTTPError as http_err:
-                logging.error(f"HTTP error on {method} request to {endpoint}: {http_err}")
+            except requests.HTTPError:
+                logging.exception(f"HTTP error on {method} request to {endpoint}")
 
                 if response.status_code == 401:
                     logging.warning("Token may be expired. Fetching new token...")
@@ -99,8 +101,8 @@ class WNAPIClient:
             except requests.Timeout:
                 logging.warning(f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})")
 
-            except RequestException as req_err:
-                logging.error(f"Request error: {req_err}")
+            except RequestException:
+                logging.exception(f"Request error")
 
             if attempt < self.max_retries:
                 logging.info(f"Retrying request in {self.retry_delay} seconds...")
