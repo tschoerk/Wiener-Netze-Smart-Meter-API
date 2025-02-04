@@ -68,7 +68,7 @@ class WNAPIClient:
         """
         token = self.get_bearer_token()
         if not token:
-            logging.exception("No valid token available, request aborted.")
+            logging.error("No valid token available, request aborted.")
             return None
 
         headers = {
