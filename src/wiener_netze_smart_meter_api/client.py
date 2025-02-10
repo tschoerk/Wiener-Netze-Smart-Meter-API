@@ -2,7 +2,7 @@ from typing import Dict, Optional, Tuple
 import requests
 import time
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from requests.exceptions import RequestException
 from urllib.parse import urljoin
 from dateutil.relativedelta import relativedelta
