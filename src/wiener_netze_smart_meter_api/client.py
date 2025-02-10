@@ -7,10 +7,10 @@ from requests.exceptions import RequestException
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
 class WNAPIClient:
     TOKEN_URL = "https://log.wien/auth/realms/logwien/protocol/openid-connect/token"    
     BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0"
+    ALLOWED_METHODS = {"GET", "POST"}
 
     def __init__(self, client_id: str, client_secret: str, api_key: str, token_url:str = TOKEN_URL, base_url:str = BASE_URL, max_retries: int = 3, retry_delay: int = 5):
         self.client_id = client_id
@@ -69,10 +69,16 @@ class WNAPIClient:
     def make_authenticated_request(self, endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
         """
         Makes an API request with a valid Bearer Token.
+        
+        Note: Currently, the Wiener Netze API endpoints only use GET, but POST support is included for future endpoints if needed.
     
         Returns:
             The JSON response as a dictionary if successful, or None on failure.
         """
+        method = method.upper()
+        if method not in self.ALLOWED_METHODS:
+            raise NotImplementedError(f"HTTP method {method} is not supported."
+        
         for attempt in range(1, self.max_retries + 1):
             token = self.get_bearer_token()
             if not token:
@@ -89,9 +95,6 @@ class WNAPIClient:
                     response = self.session.get(endpoint, headers=headers, timeout=10)
                 elif method.upper() == "POST":
                     response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
-                else:
-                    logging.error(f"Unsupported HTTP method: {method}")
-                    return None
 
                 response.raise_for_status()
                 logging.info(f"Successful {method} request to {endpoint}")
