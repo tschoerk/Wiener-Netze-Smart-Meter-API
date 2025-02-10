@@ -69,7 +69,7 @@ class WNAPIClient:
     def make_authenticated_request(self, endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
         """
         Makes an API request with a valid Bearer Token.
-        
+    
         Returns:
             The JSON response as a dictionary if successful, or None on failure.
         """
@@ -84,39 +84,39 @@ class WNAPIClient:
                 "x-Gateway-APIKey": self.api_key
             }
 
-            for attempt in range(1, self.max_retries + 1):
-                try:
-                    if method.upper() == "GET":
-                        response = self.session.get(endpoint, headers=headers, timeout=10)
-                    elif method.upper() == "POST":
-                        response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
-                    else:
-                        logging.error(f"Unsupported HTTP method: {method}")
-                        return None
-
-                    response.raise_for_status()
-                    logging.info(f"Successful {method} request to {endpoint}")
-                    return response.json()
-
-                except requests.HTTPError:
-                    logging.exception(f"HTTP error on {method} request to {endpoint}")
-                    if response.status_code == 401:
-                        logging.warning("Token may be expired. Fetching new token...")
-                        self.token = None  # Force token refresh
-
-                except requests.Timeout:
-                    logging.warning(f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})")
-
-                except RequestException:
-                    logging.exception(f"Request error")
-
-                delay = self.retry_delay * (2 ** (attempt - 1))
-                if attempt < self.max_retries:
-                    logging.info(f"Retrying request in {delay} seconds...")
-                    time.sleep(delay)
+            try:
+                if method.upper() == "GET":
+                    response = self.session.get(endpoint, headers=headers, timeout=10)
+                elif method.upper() == "POST":
+                    response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
                 else:
-                    logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
+                    logging.error(f"Unsupported HTTP method: {method}")
                     return None
+
+                response.raise_for_status()
+                logging.info(f"Successful {method} request to {endpoint}")
+                return response.json()
+
+            except requests.HTTPError as http_err:
+                logging.exception(f"HTTP error on {method} request to {endpoint}")
+                if http_err.response is not None and http_err.response.status_code == 401:
+                    logging.warning("Token may be expired. Fetching new token...")
+                    self.token = None  # Invalidate token to force refresh
+
+            except requests.Timeout:
+                logging.warning(f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})")
+
+            except RequestException:
+                logging.exception("Request error occurred")
+
+            delay = self.retry_delay * (2 ** (attempt - 1))
+            if attempt < self.max_retries:
+                logging.info(f"Retrying request in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
+                return None
+
 
     def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL") -> Optional[Dict]:
         """
