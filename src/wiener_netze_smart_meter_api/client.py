@@ -1,8 +1,8 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import requests
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from requests.exceptions import RequestException
 from urllib.parse import urljoin
 from dateutil.relativedelta import relativedelta
@@ -122,6 +122,29 @@ class WNAPIClient:
                 logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
                 return None
 
+    def _calculate_date_range(self, datumVon: Optional[str], datumBis: Optional[str]) -> Tuple[str, str]:
+        """
+        Calculates the date range based on the provided datumVon and datumBis.
+        
+        - If both dates are provided, returns them unchanged.
+        - If only datumVon is provided, datumBis defaults to today.
+        - If only datumBis is provided, datumVon defaults to 3 years before datumBis.
+        - If neither is provided, defaults to 3 years ago to today.
+        
+        Assumes dates are in the format '%Y-%m-%d'.
+        """
+        now = datetime.today()
+        if datumVon and datumBis:
+            return datumVon, datumBis
+        if not datumVon and not datumBis:
+            return (now - relativedelta(years=3)).strftime('%Y-%m-%d'), now.strftime('%Y-%m-%d')
+        if datumVon and not datumBis:
+            return datumVon, now.strftime('%Y-%m-%d')
+        if datumBis and not datumVon:
+            datumBis_dt = datetime.strptime(datumBis, '%Y-%m-%d')
+            datumVon_dt = datumBis_dt - relativedelta(years=3)
+            return datumVon_dt.strftime('%Y-%m-%d'), datumBis
+
     def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL") -> Optional[Dict]:
         """
         Fetches information about a specific or all smart meter(s) associated with the user.
@@ -143,10 +166,7 @@ class WNAPIClient:
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
         Defaults to fetching data from 3 years ago to today.
         """
-        if not datumVon:
-            datumVon = (datetime.today() - relativedelta(years=3)).strftime('%Y-%m-%d')        
-        if not datumBis:
-            datumBis = datetime.today().strftime('%Y-%m-%d')
+        datumVon, datumBis = self._calculate_date_range(datumVon, datumBis)
 
         params = {
             "wertetyp": wertetyp,
@@ -179,3 +199,11 @@ class WNAPIClient:
         """ Fetches meter readings. 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter."""
         return self.get_messwerte("METER_READ", zaehlpunkt, datumVon, datumBis)
+    
+    def _default_date_range(self) -> (str, str):
+        """
+        Returns a tuple with the default start and end dates (3 years ago to today) in 'YYYY-MM-DD' format.
+        """
+        now = datetime.now(timezone.utc)
+        start_date = now - relativedelta(years=3)
+        return start_date.strftime('%Y-%m-%d'), now.strftime('%Y-%m-%d')
