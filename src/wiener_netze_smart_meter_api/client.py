@@ -66,50 +66,50 @@ class WNAPIClient:
         Makes an API request with a valid Bearer Token.
         Implements automatic retries.
         """
-        token = self.get_bearer_token()
-        if not token:
-            logging.error("No valid token available, request aborted.")
-            return None
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "x-Gateway-APIKey": self.api_key
-        }
-
         for attempt in range(1, self.max_retries + 1):
-            try:
-                if method.upper() == "GET":
-                    response = self.session.get(endpoint, headers=headers, timeout=10)
-                elif method.upper() == "POST":
-                    response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
-                else:
-                    logging.error(f"Unsupported HTTP method: {method}")
-                    return None
-
-                response.raise_for_status()
-                logging.info(f"Successful {method} request to {endpoint}")
-                return response.json()
-
-            except requests.HTTPError:
-                logging.exception(f"HTTP error on {method} request to {endpoint}")
-
-                if response.status_code == 401:
-                    logging.warning("Token may be expired. Fetching new token...")
-                    self.token = None  # Force token refresh
-                    return self.make_authenticated_request(endpoint, method, data)
-
-            except requests.Timeout:
-                logging.warning(f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})")
-
-            except RequestException:
-                logging.exception(f"Request error")
-
-            if attempt < self.max_retries:
-                logging.info(f"Retrying request in {self.retry_delay} seconds...")
-                time.sleep(self.retry_delay)
-            else:
-                logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
+            token = self.get_bearer_token()
+            if not token:
+                logging.error("No valid token available, request aborted.")
                 return None
+
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "x-Gateway-APIKey": self.api_key
+            }
+
+            for attempt in range(1, self.max_retries + 1):
+                try:
+                    if method.upper() == "GET":
+                        response = self.session.get(endpoint, headers=headers, timeout=10)
+                    elif method.upper() == "POST":
+                        response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
+                    else:
+                        logging.error(f"Unsupported HTTP method: {method}")
+                        return None
+
+                    response.raise_for_status()
+                    logging.info(f"Successful {method} request to {endpoint}")
+                    return response.json()
+
+                except requests.HTTPError:
+                    logging.exception(f"HTTP error on {method} request to {endpoint}")
+                    if response.status_code == 401:
+                        logging.warning("Token may be expired. Fetching new token...")
+                        self.token = None  # Force token refresh
+
+                except requests.Timeout:
+                    logging.warning(f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})")
+
+                except RequestException:
+                    logging.exception(f"Request error")
+
+                delay = self.retry_delay * (2 ** (attempt - 1))
+                if attempt < self.max_retries:
+                    logging.info(f"Retrying request in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
+                    return None
 
     def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL"):
         """
