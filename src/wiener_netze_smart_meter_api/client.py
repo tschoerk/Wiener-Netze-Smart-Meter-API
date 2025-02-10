@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 class WNAPIClient:
     TOKEN_URL = "https://log.wien/auth/realms/logwien/protocol/openid-connect/token"    
-    BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0"
+    BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0/"
     ALLOWED_METHODS = {"GET", "POST"}
 
     def __init__(self, client_id: str, client_secret: str, api_key: str, token_url:str = TOKEN_URL, base_url:str = BASE_URL, max_retries: int = 3, retry_delay: int = 5):
@@ -151,9 +151,9 @@ class WNAPIClient:
         If a zaehlpunkt is provided, fetches details for that specific meter.
         """
         if zaehlpunkt:
-            endpoint = urljoin(self.base_url,f"/zaehlpunkte/{zaehlpunkt}")
+            endpoint = urljoin(self.base_url,f"zaehlpunkte/{zaehlpunkt}")
         else:
-            endpoint = urljoin(self.base_url, "/zaehlpunkte")
+            endpoint = urljoin(self.base_url, "zaehlpunkte")
             params = {
                 "resultType": result_type
             }
@@ -175,9 +175,9 @@ class WNAPIClient:
         }
         
         if zaehlpunkt:
-            endpoint = urljoin(self.base_url, f"/zaehlpunkte/{zaehlpunkt}/messwerte")
+            endpoint = urljoin(self.base_url, f"zaehlpunkte/{zaehlpunkt}/messwerte")
         else:
-            endpoint = urljoin(self.base_url, "/zaehlpunkte/messwerte")
+            endpoint = urljoin(self.base_url, "zaehlpunkte/messwerte")
             
         return self.make_authenticated_request(endpoint, method="GET", params=params)
 
@@ -199,3 +199,10 @@ class WNAPIClient:
         """ Fetches meter readings. 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter."""
         return self.get_messwerte("METER_READ", zaehlpunkt, datumVon, datumBis)
+    
+    
+client = WNAPIClient(client_id="confidential-client-for-wn-user-115532", client_secret="jP1zttGcM36FHdjLCjoJOKq1QH0EC346", api_key="dc5077e5-5243-4382-bf46-4b41f036cd48")
+
+# Fetch all smart meters
+smart_meters = client.get_anlagendaten()
+print("All Smart Meters:", smart_meters)
