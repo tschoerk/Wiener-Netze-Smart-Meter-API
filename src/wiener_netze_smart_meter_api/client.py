@@ -199,11 +199,3 @@ class WNAPIClient:
         """ Fetches meter readings. 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter."""
         return self.get_messwerte("METER_READ", zaehlpunkt, datumVon, datumBis)
-    
-    def _default_date_range(self) -> (str, str):
-        """
-        Returns a tuple with the default start and end dates (3 years ago to today) in 'YYYY-MM-DD' format.
-        """
-        now = datetime.now(timezone.utc)
-        start_date = now - relativedelta(years=3)
-        return start_date.strftime('%Y-%m-%d'), now.strftime('%Y-%m-%d')
