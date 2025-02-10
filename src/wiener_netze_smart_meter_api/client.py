@@ -1,3 +1,4 @@
+from typing import Dict, Optional
 import requests
 import time
 import logging
@@ -23,10 +24,12 @@ class WNAPIClient:
         self.retry_delay = retry_delay  # Delay between retries in seconds
         self.session = requests.Session()  # New persistent session
 
-    def get_bearer_token(self) -> str:
+    def get_bearer_token(self) -> Optional[str]:
         """
         Retrieves a Bearer Token, refreshing it if expired.
-        Implements automatic retries.
+    
+        Returns:
+            A valid bearer token as a string if successful, or None if token retrieval fails.
         """
         if self.token and time.time() < self.token_expiry:
             return self.token  # Return cached token if still valid
@@ -63,10 +66,12 @@ class WNAPIClient:
                     logging.critical("Max retries reached. Unable to obtain token.")
                     return None
 
-    def make_authenticated_request(self, endpoint: str, method: str = "GET", data=None):
+    def make_authenticated_request(self, endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
         """
         Makes an API request with a valid Bearer Token.
-        Implements automatic retries.
+        
+        Returns:
+            The JSON response as a dictionary if successful, or None on failure.
         """
         for attempt in range(1, self.max_retries + 1):
             token = self.get_bearer_token()
@@ -113,7 +118,7 @@ class WNAPIClient:
                     logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
                     return None
 
-    def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL"):
+    def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL") -> Optional[Dict]:
         """
         Fetches information about a specific or all smart meter(s) associated with the user.
         If a zaehlpunkt is provided, fetches details for that specific meter.
@@ -124,7 +129,7 @@ class WNAPIClient:
             endpoint = f"{self.base_url}/zaehlpunkte?resultType={result_type}"
         return self.make_authenticated_request(endpoint)
 
-    def get_messwerte(self, wertetyp: str, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
+    def get_messwerte(self, wertetyp: str, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """
         Fetches measured values (QUARTER_HOUR, DAY, METER_READ) for smart meters.
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
@@ -141,21 +146,21 @@ class WNAPIClient:
             endpoint = f"{self.base_url}/zaehlpunkte/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
         return self.make_authenticated_request(endpoint)
 
-    def get_quarter_hour_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
+    def get_quarter_hour_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """ 
         Fetches quarter-hourly measured values.
         If a zaehlpunkt is provided, fetches measured values for that specific meter.        
         """
         return self.get_messwerte("QUARTER_HOUR", zaehlpunkt, datumVon, datumBis)
 
-    def get_daily_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
+    def get_daily_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """ 
         Fetches daily measured values. 
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
         """
         return self.get_messwerte("DAY", zaehlpunkt, datumVon, datumBis)
 
-    def get_meter_readings(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
+    def get_meter_readings(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """ Fetches meter readings. 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter."""
         return self.get_messwerte("METER_READ", zaehlpunkt, datumVon, datumBis)
