@@ -4,6 +4,7 @@ import time
 import logging
 from datetime import datetime, timedelta
 from requests.exceptions import RequestException
+from urllib.parse import urljoin
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -66,12 +67,12 @@ class WNAPIClient:
                     logging.critical("Max retries reached. Unable to obtain token.")
                     return None
 
-    def make_authenticated_request(self, endpoint: str, method: str = "GET", data: Optional[Dict] = None) -> Optional[Dict]:
+    def make_authenticated_request(self, endpoint: str, method: str = "GET", data: Optional[Dict] = None, params: Optional[Dict] = None) -> Optional[Dict]:
         """
         Makes an API request with a valid Bearer Token.
         
         Note: Currently, the Wiener Netze API endpoints only use GET, but POST support is included for future endpoints if needed.
-    
+
         Returns:
             The JSON response as a dictionary if successful, or None on failure.
         """
@@ -91,10 +92,10 @@ class WNAPIClient:
             }
 
             try:
-                if method.upper() == "GET":
-                    response = self.session.get(endpoint, headers=headers, timeout=10)
-                elif method.upper() == "POST":
-                    response = self.session.post(endpoint, headers=headers, json=data, timeout=10)
+                if method == "GET":
+                    response = self.session.get(endpoint, headers=headers, timeout=10, params=params)
+                elif method == "POST":
+                    response = self.session.post(endpoint, headers=headers, json=data, timeout=10, params=params)
 
                 response.raise_for_status()
                 logging.info(f"Successful {method} request to {endpoint}")
@@ -120,17 +121,20 @@ class WNAPIClient:
                 logging.critical(f"Max retries reached. Unable to complete request: {endpoint}")
                 return None
 
-
     def get_anlagendaten(self, zaehlpunkt: str = None, result_type: str = "ALL") -> Optional[Dict]:
         """
         Fetches information about a specific or all smart meter(s) associated with the user.
         If a zaehlpunkt is provided, fetches details for that specific meter.
         """
         if zaehlpunkt:
-            endpoint = f"{self.base_url}/zaehlpunkte/{zaehlpunkt}"
+            endpoint = urljoin(self.base_url,f"/zaehlpunkte/{zaehlpunkt}")
         else:
-            endpoint = f"{self.base_url}/zaehlpunkte?resultType={result_type}"
-        return self.make_authenticated_request(endpoint)
+            endpoint = urljoin(self.base_url, "/zaehlpunkte")
+            params = {
+                "resultType": result_type
+            }
+            
+        return self.make_authenticated_request(endpoint, method="GET", params=params)
 
     def get_messwerte(self, wertetyp: str, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """
@@ -143,11 +147,18 @@ class WNAPIClient:
         if not datumBis:
             datumBis = datetime.today().strftime('%Y-%m-%d')
 
+        params = {
+            "wertetyp": wertetyp,
+            "datumVon": datumVon,
+            "datumBis": datumBis
+        }
+        
         if zaehlpunkt:
-            endpoint = f"{self.base_url}/zaehlpunkte/{zaehlpunkt}/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
+            endpoint = urljoin(self.base_url, f"/zaehlpunkte/{zaehlpunkt}/messwerte")
         else:
-            endpoint = f"{self.base_url}/zaehlpunkte/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
-        return self.make_authenticated_request(endpoint)
+            endpoint = urljoin(self.base_url, "/zaehlpunkte/messwerte")
+            
+        return self.make_authenticated_request(endpoint, method="GET", params=params)
 
     def get_quarter_hour_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None) -> Optional[Dict]:
         """ 
