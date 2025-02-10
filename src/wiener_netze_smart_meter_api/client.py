@@ -8,12 +8,15 @@ from requests.exceptions import RequestException
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class WNAPIClient:
+    TOKEN_URL = "https://log.wien/auth/realms/logwien/protocol/openid-connect/token"    
     BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0"
 
-    def __init__(self, client_id: str, client_secret: str, api_key: str, max_retries: int = 3, retry_delay: int = 5):
+    def __init__(self, client_id: str, client_secret: str, api_key: str, token_url:str = TOKEN_URL, base_url:str = BASE_URL, max_retries: int = 3, retry_delay: int = 5):
         self.client_id = client_id
         self.client_secret = client_secret
         self.api_key = api_key
+        self.token_url = token_url
+        self.base_url = base_url
         self.token = None
         self.token_expiry = 0  # UNIX timestamp when the token expires
         self.max_retries = max_retries  # Max retry attempts
@@ -28,7 +31,6 @@ class WNAPIClient:
         if self.token and time.time() < self.token_expiry:
             return self.token  # Return cached token if still valid
 
-        url = "https://log.wien/auth/realms/logwien/protocol/openid-connect/token"
         data = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
@@ -38,7 +40,7 @@ class WNAPIClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                response = self.session.post(url, data=data, headers=headers, timeout=10)
+                response = self.session.post(self.token_url, data=data, headers=headers, timeout=10)
                 response.raise_for_status()
                 try:
                     token_data = response.json()
@@ -117,9 +119,9 @@ class WNAPIClient:
         If a zaehlpunkt is provided, fetches details for that specific meter.
         """
         if zaehlpunkt:
-            endpoint = f"{self.BASE_URL}/zaehlpunkte/{zaehlpunkt}"
+            endpoint = f"{self.base_url}/zaehlpunkte/{zaehlpunkt}"
         else:
-            endpoint = f"{self.BASE_URL}/zaehlpunkte?resultType={result_type}"
+            endpoint = f"{self.base_url}/zaehlpunkte?resultType={result_type}"
         return self.make_authenticated_request(endpoint)
 
     def get_messwerte(self, wertetyp: str, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
@@ -134,9 +136,9 @@ class WNAPIClient:
             datumBis = datetime.today().strftime('%Y-%m-%d')
 
         if zaehlpunkt:
-            endpoint = f"{self.BASE_URL}/zaehlpunkte/{zaehlpunkt}/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
+            endpoint = f"{self.base_url}/zaehlpunkte/{zaehlpunkt}/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
         else:
-            endpoint = f"{self.BASE_URL}/zaehlpunkte/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
+            endpoint = f"{self.base_url}/zaehlpunkte/messwerte?wertetyp={wertetyp}&datumVon={datumVon}&datumBis={datumBis}"
         return self.make_authenticated_request(endpoint)
 
     def get_quarter_hour_values(self, zaehlpunkt: str = None, datumVon: str = None, datumBis: str = None):
