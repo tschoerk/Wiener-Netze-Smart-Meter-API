@@ -150,6 +150,7 @@ class WNAPIClient:
         Fetches information about a specific or all smart meter(s) associated with the user.
         If a zaehlpunkt is provided, fetches details for that specific meter.
         """
+        params = None
         if zaehlpunkt:
             endpoint = urljoin(self.base_url,f"zaehlpunkte/{zaehlpunkt}")
         else:
@@ -199,10 +200,3 @@ class WNAPIClient:
         """ Fetches meter readings. 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter."""
         return self.get_messwerte("METER_READ", zaehlpunkt, datumVon, datumBis)
-    
-    
-client = WNAPIClient(client_id="confidential-client-for-wn-user-115532", client_secret="jP1zttGcM36FHdjLCjoJOKq1QH0EC346", api_key="dc5077e5-5243-4382-bf46-4b41f036cd48")
-
-# Fetch all smart meters
-smart_meters = client.get_anlagendaten()
-print("All Smart Meters:", smart_meters)
