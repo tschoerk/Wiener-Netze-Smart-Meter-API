@@ -77,7 +77,7 @@ class WNAPIClient:
         """
         method = method.upper()
         if method not in self.ALLOWED_METHODS:
-            raise NotImplementedError(f"HTTP method {method} is not supported."
+            raise NotImplementedError(f"HTTP method {method} is not supported.")
         
         for attempt in range(1, self.max_retries + 1):
             token = self.get_bearer_token()
