@@ -2,9 +2,10 @@ from typing import Dict, Optional
 import requests
 import time
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from requests.exceptions import RequestException
 from urllib.parse import urljoin
+from dateutil.relativedelta import relativedelta
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -143,7 +144,7 @@ class WNAPIClient:
         Defaults to fetching data from 3 years ago to today.
         """
         if not datumVon:
-            datumVon = (datetime.today() - timedelta(days=3*365)).strftime('%Y-%m-%d')
+            datumVon = (datetime.today() - relativedelta(years=3)).strftime('%Y-%m-%d')        
         if not datumBis:
             datumBis = datetime.today().strftime('%Y-%m-%d')
 
