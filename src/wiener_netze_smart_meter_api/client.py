@@ -28,12 +28,7 @@ import requests
 from dateutil.relativedelta import relativedelta
 from requests.exceptions import RequestException
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-
+_LOGGER = logging.getLogger(__name__)
 
 class WNAPIClient:
     """Client for the Wiener Netze Smart Meter API.
@@ -103,17 +98,17 @@ class WNAPIClient:
                 try:
                     token_data = response.json()
                 except ValueError:
-                    logging.exception("JSON decoding failed for token response")
+                    _LOGGER.exception("JSON decoding failed for token response")
                     raise
             except RequestException:  # noqa: PERF203
                 msg = f"Token request failed (Attempt {attempt}/{self.max_retries})"
-                logging.exception(msg)
+                _LOGGER.exception(msg)
                 if attempt < self.max_retries:
                     msg = f"Retrying in {self.retry_delay} seconds..."
-                    logging.info(msg)
+                    _LOGGER.info(msg)
                     time.sleep(self.retry_delay)
                 else:
-                    logging.critical("Max retries reached. Unable to obtain token.")
+                    _LOGGER.critical("Max retries reached. Unable to obtain token.")
                     return None
             else:
                 self.token = token_data.get("access_token")
@@ -123,7 +118,7 @@ class WNAPIClient:
                 msg = (
                     f"Successfully obtained Bearer Token (Expires in {expires_in} sec)"
                 )
-                logging.info(msg)
+                _LOGGER.info(msg)
                 return self.token
         return None
 
@@ -162,7 +157,7 @@ class WNAPIClient:
         for attempt in range(1, self.max_retries + 1):
             token = self.get_bearer_token()
             if not token:
-                logging.error("No valid token available, request aborted.")
+                _LOGGER.error("No valid token available, request aborted.")
                 return None
 
             headers = {
@@ -189,36 +184,36 @@ class WNAPIClient:
 
                 response.raise_for_status()
                 msg = f"Successful {method} request to {endpoint}"
-                logging.info(msg)
+                _LOGGER.info(msg)
                 return response.json()
 
             except requests.HTTPError as http_err:
                 msg = f"HTTP error on {method} request to {endpoint}"
-                logging.exception(msg)
+                _LOGGER.exception(msg)
                 if (
                     http_err.response is not None
                     and http_err.response.status_code == self.HTTP_CODE_UNAUTHORIZED
                 ):
-                    logging.warning("Token may be expired. Fetching new token...")
+                    _LOGGER.warning("Token may be expired. Fetching new token...")
                     self.token = None  # Invalidate token to force refresh
 
             except requests.Timeout:
                 msg = f"""
                 Timeout on {method} request to {endpoint}
                 (Attempt {attempt}/{self.max_retries})"""
-                logging.warning(msg)
+                _LOGGER.warning(msg)
 
             except RequestException:
-                logging.exception("Request error occurred")
+                _LOGGER.exception("Request error occurred")
 
             delay = self.retry_delay * (2 ** (attempt - 1))
             if attempt < self.max_retries:
                 msg = f"Retrying request in {delay} seconds..."
-                logging.info(msg)
+                _LOGGER.info(msg)
                 time.sleep(delay)
             else:
                 msg = f"Max retries reached. Unable to complete request: {endpoint}"
-                logging.critical(msg)
+                _LOGGER.critical(msg)
                 return None
         return None
 
@@ -309,7 +304,7 @@ class WNAPIClient:
         """  # noqa: E501
         datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
 
-        params = {"wertetyp": wertetyp, "datum_von": datum_von, "datum_bis": datum_bis}
+        params = {"wertetyp": wertetyp, "datumVon": datum_von, "datumBis": datum_bis}
 
         if zaehlpunkt:
             endpoint = urljoin(self.BASE_URL, f"zaehlpunkte/{zaehlpunkt}/messwerte")
