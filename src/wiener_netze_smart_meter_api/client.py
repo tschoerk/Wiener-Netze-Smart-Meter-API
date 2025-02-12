@@ -198,9 +198,7 @@ class WNAPIClient:
                     self.token = None  # Invalidate token to force refresh
 
             except requests.Timeout:
-                msg = f"""
-                Timeout on {method} request to {endpoint}
-                (Attempt {attempt}/{self.max_retries})"""
+                msg = f"Timeout on {method} request to {endpoint} (Attempt {attempt}/{self.max_retries})"  # noqa: E501
                 _LOGGER.warning(msg)
 
             except RequestException:
