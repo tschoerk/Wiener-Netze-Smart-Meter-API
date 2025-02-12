@@ -26,9 +26,11 @@ from urllib.parse import urljoin
 
 import requests
 from dateutil.relativedelta import relativedelta
+from exceptions import WNAPIAuthenticationError, WNAPIRequestError
 from requests.exceptions import RequestException
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class WNAPIClient:
     """Client for the Wiener Netze Smart Meter API.
@@ -108,8 +110,9 @@ class WNAPIClient:
                     _LOGGER.info(msg)
                     time.sleep(self.retry_delay)
                 else:
-                    _LOGGER.critical("Max retries reached. Unable to obtain token.")
-                    return None
+                    msg = "Max retries reached. Unable to obtain token."
+                    _LOGGER.critical(msg)
+                    raise WNAPIAuthenticationError(msg) from None
             else:
                 self.token = token_data.get("access_token")
                 expires_in = token_data.get("expires_in", 300)  # Default to 300 sec
@@ -212,7 +215,7 @@ class WNAPIClient:
             else:
                 msg = f"Max retries reached. Unable to complete request: {endpoint}"
                 _LOGGER.critical(msg)
-                return None
+                raise WNAPIRequestError(msg)
         return None
 
     def _calculate_date_range(
