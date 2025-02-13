@@ -24,7 +24,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-	"requests>=2.32.3"
+	"requests>=2.32.3",
+  "python-dateutil>=2.8.2",
 ]
 
 [project.urls]
@@ -66,3 +67,8 @@ select = ["ALL"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]

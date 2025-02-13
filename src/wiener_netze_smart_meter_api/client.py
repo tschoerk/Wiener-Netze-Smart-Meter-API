@@ -219,7 +219,7 @@ class WNAPIClient:
                 raise WNAPIRequestError(msg)
         return None
 
-    def _calculate_date_range(
+    def calculate_date_range(
         self,
         datum_von: str | None,
         datum_bis: str | None,
@@ -251,7 +251,9 @@ class WNAPIClient:
         if datum_von and not datum_bis:
             return datum_von, now.strftime("%Y-%m-%d")
         if datum_bis and not datum_von:
-            datum_bis_dt = datetime.datetime.strptime(datum_bis, "%Y-%m-%d")
+            datum_bis_dt = datetime.datetime.strptime(datum_bis, "%Y-%m-%d").replace(
+                tzinfo=datetime.timezone.utc,
+            )
             datum_von_dt = datum_bis_dt - relativedelta(years=3)
             return datum_von_dt.strftime("%Y-%m-%d"), datum_bis
         return None
@@ -304,7 +306,7 @@ class WNAPIClient:
             Optional[Dict]: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
-        datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
+        datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
 
         params = {"wertetyp": wertetyp, "datumVon": datum_von, "datumBis": datum_bis}
 
