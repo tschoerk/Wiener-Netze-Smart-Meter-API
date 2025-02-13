@@ -26,8 +26,9 @@ from urllib.parse import urljoin
 
 import requests
 from dateutil.relativedelta import relativedelta
-from exceptions import WNAPIAuthenticationError, WNAPIRequestError
 from requests.exceptions import RequestException
+
+from .exceptions import WNAPIAuthenticationError, WNAPIRequestError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -250,7 +251,7 @@ class WNAPIClient:
         if datum_von and not datum_bis:
             return datum_von, now.strftime("%Y-%m-%d")
         if datum_bis and not datum_von:
-            datum_bis_dt = datetime.strptime(datum_bis, "%Y-%m-%d")
+            datum_bis_dt = datetime.datetime.strptime(datum_bis, "%Y-%m-%d")
             datum_von_dt = datum_bis_dt - relativedelta(years=3)
             return datum_von_dt.strftime("%Y-%m-%d"), datum_bis
         return None
