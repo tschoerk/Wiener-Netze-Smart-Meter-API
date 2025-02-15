@@ -72,3 +72,6 @@ max-complexity = 25
 addopts = [
     "--import-mode=importlib",
 ]
+
+[tool.ruff.lint.pylint]
+max-branches = 20

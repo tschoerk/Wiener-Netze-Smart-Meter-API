@@ -317,11 +317,134 @@ class WNAPIClient:
 
         return self.make_authenticated_request(endpoint, method="GET", params=params)
 
+    def _get_paginated_messwerte(
+        self,
+        wertetyp: str,
+        zaehlpunkt: str | None,
+        datum_von: str | None,
+        datum_bis: str | None,
+        chunk_days: int = 7,
+    ) -> list[dict] | None:
+        """Fetch measured values with client-side pagination and aggregate results.
+
+        Splits the overall date range into chunks (default 30 days per chunk) and aggregates
+        the responses by grouping results by 'zaehlpunkt'. For each meter, the 'zaehlwerke'
+        entries are merged by matching on 'obisCode'. For duplicate entries, their 'messwerte'
+        lists are combined without adding duplicate measurements (determined by 'zeitVon' and 'zeitBis').
+
+        Args:
+            wertetyp (str): The type of measured values (e.g., "QUARTER_HOUR", "DAY", "METER_READ").
+            zaehlpunkt (str | None): The meter identifier. If provided, only data for this meter is fetched.
+            datum_von (str | None): The starting date in '%Y-%m-%d' format.
+            datum_bis (str | None): The ending date in '%Y-%m-%d' format.
+            chunk_days (int, optional): The number of days per chunk. Must be at least 2. Defaults to 30.
+
+        Returns:
+            list[dict] | None: A list of aggregated meter responses, or None if no data was retrieved.
+
+        """  # noqa: E501
+        # Enforce a minimum chunk_days value of 2.
+        chunk_days = max(chunk_days, 2)
+
+        # Determine effective date range.
+        datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
+        start_date = (
+            datetime.datetime.strptime(datum_von, "%Y-%m-%d")
+            .replace(
+                tzinfo=datetime.timezone.utc,
+            )
+            .date()
+        )
+        end_date = (
+            datetime.datetime.strptime(datum_bis, "%Y-%m-%d")
+            .replace(
+                tzinfo=datetime.timezone.utc,
+            )
+            .date()
+        )
+        aggregated: dict[str, dict] = {}
+
+        current_start = start_date
+        # Use a strict < condition so we don't start a chunk when current_start equals end_date, otherwise we get a 400.  # noqa: E501
+        while current_start < end_date:
+            current_end = min(
+                current_start + datetime.timedelta(days=chunk_days - 1),
+                end_date,
+            )
+
+            chunk_von = current_start.strftime("%Y-%m-%d")
+            chunk_bis = current_end.strftime("%Y-%m-%d")
+
+            msg = f"Fetching {wertetyp} chunk data from {chunk_von} to {chunk_bis}"
+            _LOGGER.info(msg)
+
+            # Retrieve data for this chunk.
+            chunk_data = self.get_messwerte(wertetyp, zaehlpunkt, chunk_von, chunk_bis)
+            if chunk_data:
+                for meter in chunk_data:
+                    zp = meter.get("zaehlpunkt")
+                    if not zp:
+                        continue
+                    if zp not in aggregated:
+                        # Create a deep copy: copy all keys and duplicate the zaehlwerke list.  # noqa: E501
+                        aggregated[zp] = {
+                            **meter,
+                            "zaehlwerke": [
+                                {**zw, "messwerte": zw.get("messwerte", []).copy()}
+                                for zw in meter.get("zaehlwerke", [])
+                            ],
+                        }
+                    else:
+                        # Merge each zaehlwerke entry.
+                        for zw in meter.get("zaehlwerke", []):
+                            obis = zw.get("obisCode")
+                            found = None
+                            for agg_zw in aggregated[zp].get("zaehlwerke", []):
+                                if agg_zw.get("obisCode") == obis:
+                                    found = agg_zw
+                                    break
+                            if found is None:
+                                # No matching obisCode; add a new entry.
+                                new_zw = {
+                                    **zw,
+                                    "messwerte": zw.get("messwerte", []).copy(),
+                                }
+                                aggregated[zp].setdefault("zaehlwerke", []).append(
+                                    new_zw,
+                                )
+                            else:
+                                # Merge messwerte, checking duplicates based on zeitVon and zeitBis.  # noqa: E501
+                                for mv in zw.get("messwerte", []):
+                                    if not any(
+                                        existing.get("zeitVon") == mv.get("zeitVon")
+                                        and existing.get("zeitBis") == mv.get("zeitBis")
+                                        for existing in found.get("messwerte", [])
+                                    ):
+                                        found.setdefault("messwerte", []).append(mv)
+            else:
+                msg = f"No data returned for chunk {chunk_von} to {chunk_bis}"
+                _LOGGER.warning(msg)
+
+            # Advance current_start to current_end to allow one-day overlap.
+            current_start = current_end
+            msg = f"Next chunk starts at {current_start}"
+            _LOGGER.info(msg)
+
+        msg = f"Chunk start is equal to end at {current_start} - finishing pagination"
+        _LOGGER.info(msg)
+
+        if not aggregated:
+            return None
+
+        return list(aggregated.values())
+
     def get_quarter_hour_values(
         self,
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        paginate: bool = False,
+        chunk_days: int = 7,
     ) -> dict | None:
         """Fetch quarter-hourly measured values.
 
@@ -331,11 +454,21 @@ class WNAPIClient:
             zaehlpunkt (str, optional): The meter identifier. Defaults to None.
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
+            paginate (bool, optional): Whether to paginate the request. Defaults to False.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
             Optional[Dict]: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
+        if paginate:
+            return self._get_paginated_messwerte(
+                "QUARTER_HOUR",
+                zaehlpunkt,
+                datum_von,
+                datum_bis,
+                chunk_days,
+            )
         return self.get_messwerte("QUARTER_HOUR", zaehlpunkt, datum_von, datum_bis)
 
     def get_daily_values(
@@ -343,6 +476,8 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        paginate: bool = False,
+        chunk_days: int = 7,
     ) -> dict | None:
         """Fetch daily measured values.
 
@@ -352,11 +487,17 @@ class WNAPIClient:
             zaehlpunkt (str, optional): The meter identifier. Defaults to None.
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
+            paginate (bool, optional): Whether to paginate the request. Defaults to False.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
             Optional[Dict]: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
+        if paginate:
+            return self._get_paginated_messwerte(
+                "DAY", zaehlpunkt, datum_von, datum_bis, chunk_days,
+            )
         return self.get_messwerte("DAY", zaehlpunkt, datum_von, datum_bis)
 
     def get_meter_readings(
@@ -364,6 +505,8 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        paginate: bool = False,
+        chunk_days: int = 7,
     ) -> dict | None:
         """Fetch meter readings.
 
@@ -373,9 +516,15 @@ class WNAPIClient:
             zaehlpunkt (str, optional): The meter identifier. Defaults to None.
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
+            paginate (bool, optional): Whether to paginate the request. Defaults to False.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
             Optional[Dict]: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
+        if paginate:
+            return self._get_paginated_messwerte(
+                "METER_READ", zaehlpunkt, datum_von, datum_bis, chunk_days,
+            )
         return self.get_messwerte("METER_READ", zaehlpunkt, datum_von, datum_bis)
