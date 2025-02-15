@@ -75,3 +75,4 @@ addopts = [
 
 [tool.ruff.lint.pylint]
 max-branches = 20
+max-args = 10

@@ -248,6 +248,8 @@ class WNAPIClient:
         if datum_von and datum_bis:
             if datum_von == datum_bis:
                 # If the dates are equal, extend datum_bis by one day, since the API throws a 400 otherwise.  # noqa: E501
+                msg = "datum_von and datum_bis are equal. Extending datum_bis by 1 day."
+                _LOGGER.warning(msg)
                 datum_bis_dt = datetime.datetime.strptime(
                     datum_bis,
                     "%Y-%m-%d",
@@ -351,14 +353,14 @@ class WNAPIClient:
             zaehlpunkt (str | None): The meter identifier. If provided, only data for this meter is fetched.
             datum_von (str | None): The starting date in '%Y-%m-%d' format.
             datum_bis (str | None): The ending date in '%Y-%m-%d' format.
-            chunk_days (int, optional): The number of days per chunk. Must be at least 2. Defaults to 30.
+            chunk_days (int, optional): The number of days per chunk. Must be at least 1. Defaults to 7.
 
         Returns:
             list[dict] | None: A list of aggregated meter responses, or None if no data was retrieved.
 
         """  # noqa: E501
-        # Enforce a minimum chunk_days value of 2.
-        chunk_days = max(chunk_days, 2)
+        # Enforce a minimum chunk_days value of 1.
+        chunk_days = max(chunk_days, 1)
 
         # Determine effective date range.
         datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
@@ -382,7 +384,7 @@ class WNAPIClient:
         # Use a strict < condition so we don't start a chunk when current_start equals end_date, otherwise we get a 400.  # noqa: E501
         while current_start < end_date:
             current_end = min(
-                current_start + datetime.timedelta(days=chunk_days - 1),
+                current_start + datetime.timedelta(days=chunk_days),
                 end_date,
             )
 
@@ -394,6 +396,9 @@ class WNAPIClient:
 
             # Retrieve data for this chunk.
             chunk_data = self.get_messwerte(wertetyp, zaehlpunkt, chunk_von, chunk_bis)
+            # Normalize chunk_data to a list if it is a dict (i.e., single meter case).
+            if chunk_data and isinstance(chunk_data, dict):
+                chunk_data = [chunk_data]
             if chunk_data:
                 for meter in chunk_data:
                     zp = meter.get("zaehlpunkt")
@@ -444,13 +449,17 @@ class WNAPIClient:
             msg = f"Next chunk starts at {current_start}"
             _LOGGER.info(msg)
 
-        msg = f"Chunk start is equal to end at {current_start} - finishing pagination"
+        msg = f"Chunk start is equal to end at {current_start}. Finished pagination."
         _LOGGER.info(msg)
 
         if not aggregated:
             return None
 
-        return list(aggregated.values())
+        result = list(aggregated.values())
+        # If a single meter was requested, return its dict (to mimic non-paginated call).  # noqa: E501
+        if zaehlpunkt is not None and len(result) == 1:
+            return result[0]
+        return result
 
     def get_quarter_hour_values(
         self,
