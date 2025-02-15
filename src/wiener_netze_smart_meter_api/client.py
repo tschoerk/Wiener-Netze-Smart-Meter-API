@@ -52,6 +52,7 @@ class WNAPIClient:
         api_key: str,
         max_retries: int = 3,
         retry_delay: int = 5,
+        timeout: int = 10,
     ) -> None:
         """Initialize the WNAPIClient.
 
@@ -61,6 +62,7 @@ class WNAPIClient:
             api_key (str): API key for gateway access.
             max_retries (int, optional): Maximum number of retry attempts for requests. Defaults to 3.
             retry_delay (int, optional): Delay between retries in seconds. Defaults to 5.
+            timeout (int, optional): Time in seconds until timeout error for requests.
 
         """  # noqa: E501
         self.client_id = client_id
@@ -68,8 +70,9 @@ class WNAPIClient:
         self.api_key = api_key
         self.token = None
         self.token_expiry = 0  # UNIX timestamp when the token expires
-        self.max_retries = max_retries  # Max retry attempts
-        self.retry_delay = retry_delay  # Delay between retries in seconds
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.timeout = timeout
         self.session = requests.Session()  # New persistent session
 
     def get_bearer_token(self) -> str | None:
@@ -95,7 +98,7 @@ class WNAPIClient:
                     self.TOKEN_URL,
                     data=data,
                     headers=headers,
-                    timeout=10,
+                    timeout=self.timeout,
                 )
                 response.raise_for_status()
                 try:
@@ -146,7 +149,7 @@ class WNAPIClient:
             params (Optional[Dict], optional): Query parameters for the request. Defaults to None.
 
         Returns:
-            Optional[Dict]: The JSON response as a dictionary if successful,
+            dict | None: The JSON response as a dictionary if successful,
                             or None on failure.
 
         Raises:
@@ -174,7 +177,7 @@ class WNAPIClient:
                     response = self.session.get(
                         endpoint,
                         headers=headers,
-                        timeout=10,
+                        timeout=self.timeout,
                         params=params,
                     )
                 elif method == "POST":
@@ -182,7 +185,7 @@ class WNAPIClient:
                         endpoint,
                         headers=headers,
                         json=data,
-                        timeout=10,
+                        timeout=self.timeout,
                         params=params,
                     )
 
@@ -238,11 +241,22 @@ class WNAPIClient:
             datum_bis (Optional[str]): The ending date as a string.
 
         Returns:
-            Tuple[str, str]: A tuple containing the calculated start and end dates.
+            tuple[str, str]: A tuple containing the calculated start and end dates.
 
         """
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         if datum_von and datum_bis:
+            if datum_von == datum_bis:
+                # If the dates are equal, extend datum_bis by one day, since the API throws a 400 otherwise.  # noqa: E501
+                datum_bis_dt = datetime.datetime.strptime(
+                    datum_bis,
+                    "%Y-%m-%d",
+                ).replace(
+                    tzinfo=datetime.timezone.utc,
+                )
+                datum_bis = (datum_bis_dt + datetime.timedelta(days=1)).strftime(
+                    "%Y-%m-%d",
+                )
             return datum_von, datum_bis
         if not datum_von and not datum_bis:
             return (now - relativedelta(years=3)).strftime("%Y-%m-%d"), now.strftime(
@@ -272,7 +286,7 @@ class WNAPIClient:
             result_type (str, optional): The result type filter (e.g., "ALL"). Defaults to "ALL".
 
         Returns:
-            Optional[Dict]: The API response as a dictionary, or None if the request fails.
+            dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
         params = None
@@ -303,7 +317,7 @@ class WNAPIClient:
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
 
         Returns:
-            Optional[Dict]: The API response as a dictionary, or None if the request fails.
+            dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
         datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
@@ -327,7 +341,7 @@ class WNAPIClient:
     ) -> list[dict] | None:
         """Fetch measured values with client-side pagination and aggregate results.
 
-        Splits the overall date range into chunks (default 30 days per chunk) and aggregates
+        Splits the overall date range into chunks (default 7 days per chunk) and aggregates
         the responses by grouping results by 'zaehlpunkt'. For each meter, the 'zaehlwerke'
         entries are merged by matching on 'obisCode'. For duplicate entries, their 'messwerte'
         lists are combined without adding duplicate measurements (determined by 'zeitVon' and 'zeitBis').
@@ -443,6 +457,7 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        *,
         paginate: bool = False,
         chunk_days: int = 7,
     ) -> dict | None:
@@ -476,6 +491,7 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        *,
         paginate: bool = False,
         chunk_days: int = 7,
     ) -> dict | None:
@@ -496,7 +512,11 @@ class WNAPIClient:
         """  # noqa: E501
         if paginate:
             return self._get_paginated_messwerte(
-                "DAY", zaehlpunkt, datum_von, datum_bis, chunk_days,
+                "DAY",
+                zaehlpunkt,
+                datum_von,
+                datum_bis,
+                chunk_days,
             )
         return self.get_messwerte("DAY", zaehlpunkt, datum_von, datum_bis)
 
@@ -505,6 +525,7 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
+        *,
         paginate: bool = False,
         chunk_days: int = 7,
     ) -> dict | None:
@@ -525,6 +546,10 @@ class WNAPIClient:
         """  # noqa: E501
         if paginate:
             return self._get_paginated_messwerte(
-                "METER_READ", zaehlpunkt, datum_von, datum_bis, chunk_days,
+                "METER_READ",
+                zaehlpunkt,
+                datum_von,
+                datum_bis,
+                chunk_days,
             )
         return self.get_messwerte("METER_READ", zaehlpunkt, datum_von, datum_bis)
