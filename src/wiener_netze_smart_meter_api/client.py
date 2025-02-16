@@ -222,7 +222,7 @@ class WNAPIClient:
                 raise WNAPIRequestError(msg)
         return None
 
-    def calculate_date_range(
+    def _calculate_date_range(
         self,
         datum_von: str | None,
         datum_bis: str | None,
@@ -322,7 +322,7 @@ class WNAPIClient:
             dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
-        datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
+        datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
 
         params = {"wertetyp": wertetyp, "datumVon": datum_von, "datumBis": datum_bis}
 
@@ -363,7 +363,7 @@ class WNAPIClient:
         chunk_days = max(chunk_days, 1)
 
         # Determine effective date range.
-        datum_von, datum_bis = self.calculate_date_range(datum_von, datum_bis)
+        datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
         start_date = (
             datetime.datetime.strptime(datum_von, "%Y-%m-%d")
             .replace(

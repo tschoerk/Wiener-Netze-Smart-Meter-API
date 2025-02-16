@@ -88,18 +88,18 @@ def client() -> WNAPIClient:
     )
 
 
-def test_calculate_date_range_both() -> None:
+def test__calculate_date_range_both() -> None:
     """Test that when both dates are provided, they are returned unchanged."""
     client_instance = WNAPIClient("id", "secret", "api_key")
-    start, end = client_instance.calculate_date_range("2024-01-01", "2024-12-31")
+    start, end = client_instance._calculate_date_range("2024-01-01", "2024-12-31")
     assert start == "2024-01-01"  # noqa: S101
     assert end == "2024-12-31"  # noqa: S101
 
 
-def test_calculate_date_range_neither() -> None:
+def test__calculate_date_range_neither() -> None:
     """Test that when neither date is provided, defaults are set to 3 years ago to today."""  # noqa: E501
     client_instance = WNAPIClient("id", "secret", "api_key")
-    start, end = client_instance.calculate_date_range(None, None)
+    start, end = client_instance._calculate_date_range(None, None)
     now = datetime.datetime.now(datetime.timezone.utc)
     expected_start = (now - relativedelta(years=3)).strftime("%Y-%m-%d")
     expected_end = now.strftime("%Y-%m-%d")
@@ -107,19 +107,19 @@ def test_calculate_date_range_neither() -> None:
     assert end == expected_end  # noqa: S101
 
 
-def test_calculate_date_range_only_start() -> None:
+def test__calculate_date_range_only_start() -> None:
     """Test that when only the starting date is provided, the ending date defaults to today."""  # noqa: E501
     client_instance = WNAPIClient("id", "secret", "api_key")
-    start, end = client_instance.calculate_date_range("2024-01-01", None)
+    start, end = client_instance._calculate_date_range("2024-01-01", None)
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     assert start == "2024-01-01"  # noqa: S101
     assert end == now  # noqa: S101
 
 
-def test_calculate_date_range_only_end() -> None:
+def test__calculate_date_range_only_end() -> None:
     """Test that when only the ending date is provided, the starting date is 3 years before the ending date."""  # noqa: E501
     client_instance = WNAPIClient("id", "secret", "api_key")
-    start, end = client_instance.calculate_date_range(None, "2024-12-31")
+    start, end = client_instance._calculate_date_range(None, "2024-12-31")
     expected_start = (
         datetime.datetime.strptime("2024-12-31", "%Y-%m-%d").replace(
             tzinfo=datetime.timezone.utc,
