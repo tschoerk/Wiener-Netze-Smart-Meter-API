@@ -45,7 +45,7 @@ class WNAPIClient:
     BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0/"
     ALLOWED_METHODS: ClassVar[set[str]] = {"GET", "POST"}
     HTTP_CODE_UNAUTHORIZED = 401
-    VIENNA_TZ = ZoneInfo("Europe/Vienna")
+    ALLOWED_WERTE_TYP: ClassVar[set[str]] = {"QUARTER_HOUR", "DAY", "METER_READ"}
 
     def __init__(
         self,
@@ -81,10 +81,9 @@ class WNAPIClient:
         """Retrieve a Bearer Token, refreshing it if expired.
 
         Returns:
-            Optional[str]: A valid bearer token as a string if successful,
-                           or None if token retrieval fails.
+            str | None: A valid bearer token as a string if successful, or None if token retrieval fails.
 
-        """
+        """  # noqa: E501
         if self.token and time.time() < self.token_expiry:
             return self.token  # Return cached token if still valid
 
@@ -147,8 +146,8 @@ class WNAPIClient:
         Args:
             endpoint (str): The API endpoint URL.
             method (str, optional): HTTP method to use ("GET" or "POST"). Defaults to "GET".
-            data (Optional[Dict], optional): JSON payload for POST requests. Defaults to None.
-            params (Optional[Dict], optional): Query parameters for the request. Defaults to None.
+            data (dict | None, optional): JSON payload for POST requests. Defaults to None.
+            params (dict | None, optional): Query parameters for the request. Defaults to None.
 
         Returns:
             dict | None: The JSON response as a dictionary if successful,
@@ -339,6 +338,10 @@ class WNAPIClient:
             dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
+        if wertetyp not in self.ALLOWED_WERTE_TYP:
+            msg = f"Invalid wertetyp: {wertetyp}. Must be one of: {', '.join(self.ALLOWED_WERTE_TYP)}."  # noqa: E501
+            raise ValueError(msg)
+
         datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
 
         params = {"wertetyp": wertetyp, "datumVon": datum_von, "datumBis": datum_bis}
@@ -353,9 +356,9 @@ class WNAPIClient:
     def _get_paginated_messwerte(
         self,
         wertetyp: str,
-        zaehlpunkt: str | None,
-        datum_von: str | None,
-        datum_bis: str | None,
+        zaehlpunkt: str | None = None,
+        datum_von: str | None = None,
+        datum_bis: str | None = None,
         chunk_days: int = 7,
     ) -> list[dict] | None:
         """Fetch measured values with client-side pagination and aggregate results.
@@ -367,9 +370,9 @@ class WNAPIClient:
 
         Args:
             wertetyp (str): The type of measured values (e.g., "QUARTER_HOUR", "DAY", "METER_READ").
-            zaehlpunkt (str | None): The meter identifier. If provided, only data for this meter is fetched.
-            datum_von (str | None): The starting date in '%Y-%m-%d' format.
-            datum_bis (str | None): The ending date in '%Y-%m-%d' format.
+            zaehlpunkt (str, optional): The meter identifier. If provided, only data for this meter is fetched. Defaults to None.
+            datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
+            datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             chunk_days (int, optional): The number of days per chunk. Must be at least 1. Defaults to 7.
 
         Returns:
@@ -499,7 +502,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
-            Optional[Dict]: The API response as a dictionary, or None if the request fails.
+            dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
         if paginate:
@@ -533,7 +536,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
-            Optional[Dict]: The API response as a dictionary, or None if the request fails.
+            dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
         if paginate:
@@ -567,7 +570,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
 
         Returns:
-            Optional[Dict]: The API response as a dictionary, or None if the request fails.
+            dict | None: The API response as a dictionary, or None if the request fails.
 
         """  # noqa: E501
         if paginate:
