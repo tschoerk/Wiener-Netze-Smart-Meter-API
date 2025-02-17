@@ -33,6 +33,12 @@ By following the instructions below, you can acquire the necessary API credentia
 pip install wiener-netze-smart-meter-api
 ```
 
+## Updating
+
+```console
+pip install -U wiener-netze-smart-meter-api
+```
+
 ## Usage
 ```console
 from wiener_netze_smart_meter_api import WNAPIClient
