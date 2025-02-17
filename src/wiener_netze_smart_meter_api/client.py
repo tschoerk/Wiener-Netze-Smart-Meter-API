@@ -135,7 +135,7 @@ class WNAPIClient:
                 )
                 _LOGGER.info(msg)
                 return self.token
-        return None
+        return None # pragma: no cover
 
     def make_authenticated_request(
         self,
@@ -228,7 +228,7 @@ class WNAPIClient:
                 msg = f"Max retries reached. Unable to complete request: {endpoint}"
                 _LOGGER.critical(msg)
                 raise WNAPIRequestError(msg)
-        return None
+        return None # pragma: no cover
 
     def _calculate_date_range(
         self,
@@ -295,13 +295,13 @@ class WNAPIClient:
             return (now - relativedelta(years=3)).strftime("%Y-%m-%d"), now.strftime(
                 "%Y-%m-%d",
             )
-        return None
+        return None # pragma: no cover
 
     def get_anlagendaten(
         self,
         zaehlpunkt: str | None = None,
         result_type: str = "ALL",
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch information about a specific or all smart meter(s) associated with the user.
 
         If a zaehlpunkt is provided, fetches details for that specific meter.
@@ -311,7 +311,7 @@ class WNAPIClient:
             result_type (str, optional): The result type filter (e.g., "ALL"). Defaults to "ALL".
 
         Returns:
-            dict | None: The API response as a dictionary, or None if the request fails.
+            dict | list[dict] | None: The API response as a dictionary, a list of dictionaries if multiple zaehlpunkte are present and all are called or None if the request fails.
 
         """  # noqa: E501
         params = None
@@ -329,7 +329,7 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch measured values (QUARTER_HOUR, DAY, METER_READ) for smart meters.
 
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
@@ -342,7 +342,7 @@ class WNAPIClient:
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
 
         Returns:
-            dict | None: The API response as a dictionary, or None if the request fails.
+             dict | list[dict] | None: The API response as a dictionary, a list of dictionaries if multiple zaehlpunkte are present and all are called or None if the request fails.
 
         """  # noqa: E501
         if wertetyp not in self.ALLOWED_WERTE_TYP:
@@ -367,7 +367,7 @@ class WNAPIClient:
         datum_von: str | None = None,
         datum_bis: str | None = None,
         chunk_days: int = 30,
-    ) -> list[dict] | None:
+    ) -> dict | list[dict] | None:
         """Fetch measured values with client-side pagination and aggregate results.
 
         Splits the overall date range into chunks (default 7 days per chunk) and aggregates
@@ -383,7 +383,7 @@ class WNAPIClient:
             chunk_days (int, optional): The number of days per chunk. Must be at least 1. Defaults to 30.
 
         Returns:
-            list[dict] | None: A list of aggregated meter responses, or None if no data was retrieved.
+            dict | list[dict] | None: A dict or list of aggregated meter responses, depending how many zaehlpunkte are present or requested, or None if no data was retrieved.
 
         """  # noqa: E501
         # Enforce a minimum chunk_days value of 1.
@@ -485,8 +485,8 @@ class WNAPIClient:
             return None
 
         result = list(aggregated.values())
-        # If a single meter was requested, return its dict (to mimic non-paginated call).  # noqa: E501
-        if zaehlpunkt is not None and len(result) == 1:
+        # If a single meter was requested or only one meter was returned, return its dict (to mimic non-paginated call).  # noqa: E501
+        if len(result) == 1:
             return result[0]
         return result
 
@@ -498,7 +498,7 @@ class WNAPIClient:
         *,
         paginate: bool = False,
         chunk_days: int = 30,
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch quarter-hourly measured values.
 
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
@@ -511,7 +511,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
-            dict | None: The API response as a dictionary, or None if the request fails.
+            dict | list[dict] | None: The API response as a dictionary, a list of dictionaries if multiple zaehlpunkte are present and all are called or None if the request fails.
 
         """  # noqa: E501
         if paginate:
@@ -532,7 +532,7 @@ class WNAPIClient:
         *,
         paginate: bool = False,
         chunk_days: int = 30,
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch daily measured values.
 
         If a zaehlpunkt is provided, fetches measured values for that specific meter.
@@ -545,7 +545,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
-            dict | None: The API response as a dictionary, or None if the request fails.
+            dict | list[dict] | None: The API response as a dictionary, a list of dictionaries if multiple zaehlpunkte are present and all are called or None if the request fails.
 
         """  # noqa: E501
         if paginate:
@@ -566,7 +566,7 @@ class WNAPIClient:
         *,
         paginate: bool = False,
         chunk_days: int = 30,
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch meter readings.
 
         If a zaehlpunkt is provided, fetches meter readings for that specific meter.
@@ -579,7 +579,7 @@ class WNAPIClient:
             chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
-            dict | None: The API response as a dictionary, or None if the request fails.
+            dict | list[dict] | None: The API response as a dictionary, a list of dictionaries if multiple zaehlpunkte are present and all are called or None if the request fails.
 
         """  # noqa: E501
         if paginate:
