@@ -13,7 +13,6 @@ Usage:
     python example.py
 """  # noqa: E501
 
-import datetime
 import logging
 
 from client import WNAPIClient  # Adjust the import based on your project structure
@@ -56,15 +55,27 @@ if __name__ == "__main__":
     msg = f"Daily values for meter {smart_meter_number}: {daily_values}"
     logging.debug(msg)
 
+    # Fetch daily measured values for a specific meter (defaults to last 3 years) with pagination (defaults to 30 days chunks).  # noqa: E501
+    daily_values_paginated = client.get_daily_values(smart_meter_number, paginate=True)
+    msg = f"Daily values for meter {smart_meter_number} with pagination: {daily_values_paginated}"  # noqa: E501
+    logging.debug(msg)
+
     # Define a specific date range for meter readings.
-    date_from = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc).strftime(
-        "%Y-%m-%d",
-    )
-    date_to = datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc).strftime(
-        "%Y-%m-%d",
-    )
+    date_from = "2025-01-01"
+    date_to = "2025-01-02"
 
     # Fetch meter readings for the specific meter over the given date range.
     meter_readings = client.get_meter_readings(smart_meter_number, date_from, date_to)
     msg = f"Meter readings for meter {smart_meter_number} from {date_from} to {date_to}: {meter_readings}"  # noqa: E501
+    logging.debug(msg)
+
+    # Fetch meter readings for a specific meter for a specific time period with pagination in 7 days chunks  # noqa: E501
+    meter_readings_paginated = client.get_meter_readings(
+        smart_meter_number,
+        date_from,
+        date_to,
+        paginate=True,
+        chunk_days=7,
+    )
+    msg = f"Meter readings for meter {smart_meter_number} from {date_from} to {date_to} with pagination in 7 days chunks: {meter_readings_paginated}"  # noqa: E501
     logging.debug(msg)

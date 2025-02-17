@@ -49,17 +49,25 @@ smart_meter_number = "AT0010000000000000001000000000000"
 specific_meter = client.get_anlagendaten(smart_meter_number)
 print("Specific Smart Meter:", specific_meter)
 
-# Fetch quarter-hourly measured values for all meters for the last 3 years
+# Fetch quarter-hourly measured values for all meters for the last 3 years (default time period)
 quarter_hour_values = client.get_quarter_hour_values()
 print("Quarter-Hourly Values:", quarter_hour_values)
 
-# Fetch daily measured values for a specific meter for the last 3 years
+# Fetch daily measured values for a specific meter for the last 3 years (default time period)
 daily_values = client.get_daily_values(smart_meter_number)
 print("Daily Values for Specific Meter:", daily_values)
 
-# Fetch meter readings for a specific meter for specific days
-meter_readings = client.get_meter_readings(smart_meter_number,datetime(2025,1,1).strftime('%Y-%m-%d'),datetime(2025,1,2).strftime('%Y-%m-%d'))
+# Fetch daily measured values for a specific meter for the last 3 years (default time period) with pagination in 30 days chunks (default chunk size)
+daily_values_paginated = client.get_daily_values(smart_meter_number, paginate=True)
+print("Daily Values for Specific Meter with Pagination:", daily_values_paginated)
+
+# Fetch meter readings for a specific meter for a specific time period
+meter_readings = client.get_meter_readings(smart_meter_number, "2025-01-01", "2025-01-02")
 print("Meter Readings:", meter_readings)
+
+# Fetch meter readings for a specific meter for a specific time period with pagination in 7 days chunks
+meter_readings_paginated = client.get_meter_readings(smart_meter_number, "2025-01-01", "2025-01-31", paginate=True, chunk_days=7)
+print("Meter Readings Paginated:", meter_readings_paginated)
 
 ```
 
