@@ -23,7 +23,6 @@ import logging
 import time
 from typing import ClassVar
 from urllib.parse import urljoin
-from zoneinfo import ZoneInfo
 
 import requests
 from dateutil.relativedelta import relativedelta
