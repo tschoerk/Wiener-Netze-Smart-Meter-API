@@ -64,6 +64,7 @@ exclude_lines = [
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = ["S101"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
