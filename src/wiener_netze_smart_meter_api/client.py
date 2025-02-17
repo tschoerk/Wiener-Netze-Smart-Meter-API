@@ -23,6 +23,7 @@ import logging
 import time
 from typing import ClassVar
 from urllib.parse import urljoin
+from zoneinfo import ZoneInfo
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -44,6 +45,7 @@ class WNAPIClient:
     BASE_URL = "https://api.wstw.at/gateway/WN_SMART_METER_API/1.0/"
     ALLOWED_METHODS: ClassVar[set[str]] = {"GET", "POST"}
     HTTP_CODE_UNAUTHORIZED = 401
+    VIENNA_TZ = ZoneInfo("Europe/Vienna")
 
     def __init__(
         self,
@@ -229,7 +231,10 @@ class WNAPIClient:
     ) -> tuple[str, str]:
         """Calculate the date range based on the provided datum_von and datum_bis.
 
-        - If both dates are provided, returns them unchanged.
+        - If both dates are provided:
+            - If datum_bis is earlier than datum_von, a warning is logged and the default range (3 years ago to today) is used.
+            - If they are equal, datum_bis is extended by one day.
+            - Otherwise, returns the provided dates.
         - If only datum_von is provided, datum_bis defaults to today.
         - If only datum_bis is provided, datum_von defaults to 3 years before datum_bis.
         - If neither is provided, defaults to 3 years ago to today.
@@ -237,41 +242,53 @@ class WNAPIClient:
         Assumes dates are in the format '%Y-%m-%d'.
 
         Args:
-            datum_von (Optional[str]): The starting date as a string.
-            datum_bis (Optional[str]): The ending date as a string.
+            datum_von (str | None): The starting date as a string.
+            datum_bis (str | None): The ending date as a string.
 
         Returns:
             tuple[str, str]: A tuple containing the calculated start and end dates.
 
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        if datum_von and datum_bis:
-            if datum_von == datum_bis:
-                # If the dates are equal, extend datum_bis by one day, since the API throws a 400 otherwise.  # noqa: E501
-                msg = "datum_von and datum_bis are equal. Extending datum_bis by 1 day."
-                _LOGGER.warning(msg)
-                datum_bis_dt = datetime.datetime.strptime(
-                    datum_bis,
-                    "%Y-%m-%d",
-                ).replace(
+
+        if datum_von:
+            try:
+                dt_von = datetime.datetime.strptime(datum_von, "%Y-%m-%d").replace(
                     tzinfo=datetime.timezone.utc,
                 )
-                datum_bis = (datum_bis_dt + datetime.timedelta(days=1)).strftime(
+            except ValueError as e:
+                msg = "Invalid date format. Expected '%Y-%m-%d'."
+                raise ValueError(msg) from e
+        if datum_bis:
+            try:
+                dt_bis = datetime.datetime.strptime(datum_bis, "%Y-%m-%d").replace(
+                    tzinfo=datetime.timezone.utc,
+                )
+            except ValueError as e:
+                msg = "Invalid date format. Expected '%Y-%m-%d'."
+                raise ValueError(msg) from e
+        if datum_von and datum_bis:
+            if dt_von > dt_bis:
+                msg = "datum_bis is earlier than datum_von."
+                raise ValueError(msg)
+            if dt_von == dt_bis:
+                # If the dates are equal, extend datum_bis by one day, since the API throws a 400 otherwise. # noqa: E501
+                # It is assumed that the user wants the specific day anyway so that corrects it. # noqa: E501
+                msg = "datum_von and datum_bis are equal. Extending datum_bis by 1 day."
+                _LOGGER.warning(msg)
+                datum_bis = (dt_bis + datetime.timedelta(days=1)).strftime(
                     "%Y-%m-%d",
                 )
             return datum_von, datum_bis
+        if datum_von and not datum_bis:
+            return datum_von, now.strftime("%Y-%m-%d")
+        if datum_bis and not datum_von:
+            datum_von_dt = dt_bis - relativedelta(years=3)
+            return datum_von_dt.strftime("%Y-%m-%d"), datum_bis
         if not datum_von and not datum_bis:
             return (now - relativedelta(years=3)).strftime("%Y-%m-%d"), now.strftime(
                 "%Y-%m-%d",
             )
-        if datum_von and not datum_bis:
-            return datum_von, now.strftime("%Y-%m-%d")
-        if datum_bis and not datum_von:
-            datum_bis_dt = datetime.datetime.strptime(datum_bis, "%Y-%m-%d").replace(
-                tzinfo=datetime.timezone.utc,
-            )
-            datum_von_dt = datum_bis_dt - relativedelta(years=3)
-            return datum_von_dt.strftime("%Y-%m-%d"), datum_bis
         return None
 
     def get_anlagendaten(
