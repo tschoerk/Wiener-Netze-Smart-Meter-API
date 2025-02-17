@@ -61,11 +61,20 @@ class WNAPIClient:
             client_id (str): Client ID for authentication.
             client_secret (str): Client secret for authentication.
             api_key (str): API key for gateway access.
-            max_retries (int, optional): Maximum number of retry attempts for requests. Defaults to 3.
-            retry_delay (int, optional): Delay between retries in seconds. Defaults to 5.
-            timeout (int, optional): Time in seconds until timeout error for requests.
+            max_retries (int, optional): Maximum number of retry attempts for requests. Must be >= 1. Defaults to 3.
+            retry_delay (int, optional): Delay between retries in seconds. Must be >= 0. Defaults to 5.
+            timeout (int, optional): Request timeout in seconds. Must be >= 1. Defaults to 10.
 
         """  # noqa: E501
+        if max_retries < 1:
+            msg = "max_retries must be at least 1"
+            raise ValueError(msg)
+        if retry_delay < 0:
+            msg = "retry_delay must be at least 0"
+            raise ValueError(msg)
+        if timeout < 1:
+            msg = "timeout must be at least 1"
+            raise ValueError(msg)
         self.client_id = client_id
         self.client_secret = client_secret
         self.api_key = api_key
@@ -104,8 +113,8 @@ class WNAPIClient:
                 try:
                     token_data = response.json()
                 except ValueError:
-                    _LOGGER.exception("JSON decoding failed for token response")
-                    raise
+                    msg="JSON decoding failed for token response"
+                    raise ValueError(msg) from None
             except RequestException:  # noqa: PERF203
                 msg = f"Token request failed (Attempt {attempt}/{self.max_retries})"
                 _LOGGER.exception(msg)
@@ -115,7 +124,6 @@ class WNAPIClient:
                     time.sleep(self.retry_delay)
                 else:
                     msg = "Max retries reached. Unable to obtain token."
-                    _LOGGER.critical(msg)
                     raise WNAPIAuthenticationError(msg) from None
             else:
                 self.token = token_data.get("access_token")
@@ -358,7 +366,7 @@ class WNAPIClient:
         zaehlpunkt: str | None = None,
         datum_von: str | None = None,
         datum_bis: str | None = None,
-        chunk_days: int = 7,
+        chunk_days: int = 30,
     ) -> list[dict] | None:
         """Fetch measured values with client-side pagination and aggregate results.
 
@@ -372,7 +380,7 @@ class WNAPIClient:
             zaehlpunkt (str, optional): The meter identifier. If provided, only data for this meter is fetched. Defaults to None.
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
-            chunk_days (int, optional): The number of days per chunk. Must be at least 1. Defaults to 7.
+            chunk_days (int, optional): The number of days per chunk. Must be at least 1. Defaults to 30.
 
         Returns:
             list[dict] | None: A list of aggregated meter responses, or None if no data was retrieved.
@@ -487,7 +495,7 @@ class WNAPIClient:
         datum_bis: str | None = None,
         *,
         paginate: bool = False,
-        chunk_days: int = 7,
+        chunk_days: int = 30,
     ) -> dict | None:
         """Fetch quarter-hourly measured values.
 
@@ -498,7 +506,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
@@ -521,7 +529,7 @@ class WNAPIClient:
         datum_bis: str | None = None,
         *,
         paginate: bool = False,
-        chunk_days: int = 7,
+        chunk_days: int = 30,
     ) -> dict | None:
         """Fetch daily measured values.
 
@@ -532,7 +540,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
@@ -555,7 +563,7 @@ class WNAPIClient:
         datum_bis: str | None = None,
         *,
         paginate: bool = False,
-        chunk_days: int = 7,
+        chunk_days: int = 30,
     ) -> dict | None:
         """Fetch meter readings.
 
@@ -566,7 +574,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 7.
+            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
