@@ -387,7 +387,9 @@ class WNAPIClient:
 
         """  # noqa: E501
         # Enforce a minimum chunk_days value of 1.
-        chunk_days = max(chunk_days, 1)
+        if chunk_days < 1:
+            msg = "chunk_days must be at least 1"
+            raise ValueError(msg)
 
         # Determine effective date range.
         datum_von, datum_bis = self._calculate_date_range(datum_von, datum_bis)
@@ -506,7 +508,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
+            chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
@@ -540,7 +542,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
+            chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
@@ -574,7 +576,7 @@ class WNAPIClient:
             datum_von (str, optional): The starting date in '%Y-%m-%d' format. Defaults to None.
             datum_bis (str, optional): The ending date in '%Y-%m-%d' format. Defaults to None.
             paginate (bool, optional): Whether to paginate the request. Defaults to False.
-            chunk_days (int, optional): Days per chunk if paginating. Defaults to 30.
+            chunk_days (int, optional): Days per chunk if paginating. Must be at least 1. Defaults to 30.
 
         Returns:
             dict | None: The API response as a dictionary, or None if the request fails.
