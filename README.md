@@ -75,6 +75,16 @@ print("Meter Readings:", meter_readings)
 meter_readings_paginated = client.get_meter_readings(smart_meter_number, "2025-01-01", "2025-01-31", paginate=True, chunk_days=7)
 print("Meter Readings Paginated:", meter_readings_paginated)
 
+# Optional settings for the client regarding request retries, delay and timeout.
+client = WNAPIClient(
+    client_id="client_id",
+    client_secret="",
+    api_key="api_key",
+    max_retries=3,
+    retry_delay=5,
+    timeout=10,
+)
+
 ```
 
 ## License

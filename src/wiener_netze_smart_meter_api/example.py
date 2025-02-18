@@ -79,3 +79,13 @@ if __name__ == "__main__":
     )
     msg = f"Meter readings for meter {smart_meter_number} from {date_from} to {date_to} with pagination in 7 days chunks: {meter_readings_paginated}"  # noqa: E501
     logging.debug(msg)
+
+    # Optional settings for the client regarding request retries, delay and timeout.
+    client = WNAPIClient(
+        client_id="client_id",
+        client_secret="",
+        api_key="api_key",
+        max_retries=3,
+        retry_delay=5,
+        timeout=10,
+    )
