@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -49,18 +50,6 @@ def fake_get_messwerte_mr(
                             "zeitBis": "2025-01-02T23:00:00.000Z",
                             "qualitaet": "VAL",
                         },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-02" and datum_bis == "2025-01-03":
-        return {
-            "zaehlpunkt": "test_meter",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "1-1:1.8.0",
-                    "messwerte": [
                         {
                             "messwert": 200,
                             "zeitVon": "2025-01-02T23:00:00.000Z",
@@ -83,6 +72,12 @@ def fake_get_messwerte_mr(
                             "messwert": 300,
                             "zeitVon": "2025-01-03T23:00:00.000Z",
                             "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 400,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
                             "qualitaet": "VAL",
                         },
                     ],
@@ -116,6 +111,12 @@ def fake_get_messwerte_mr(
                             "zeitBis": "2025-01-04T23:00:00.000Z",
                             "qualitaet": "VAL",
                         },
+                        {
+                            "messwert": 400,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
                     ],
                 },
             ],
@@ -146,10 +147,11 @@ def test_get_meter_readings_paginated(
 ) -> None:
     """Test that get_meter_readings with pagination aggregates chunk responses correctly for a single meter.
 
-    The date range is split into 3 chunks:
+    The date range is split into 4 chunks:
       - 2025-01-01 to 2025-01-02
       - 2025-01-02 to 2025-01-03
       - 2025-01-03 to 2025-01-04
+      - 2025-01-04 to 2025-01-05
     The aggregated result should match the full-range response.
     """  # noqa: E501
     monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_mr)
@@ -158,7 +160,7 @@ def test_get_meter_readings_paginated(
         "2025-01-01",
         "2025-01-04",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
     )
     expected = fake_get_messwerte_mr(
         "METER_READ",
@@ -177,13 +179,13 @@ def test_get_meter_readings_invalid_chunk_days(client: WNAPIClient) -> None:
     If chunk_days is set to a value less than 1, a ValueError with the message
     "chunk_days must be at least 1" should be raised.
     """
-    with pytest.raises(ValueError, match="chunk_days must be at least 1"):
+    with pytest.raises(ValueError, match="chunk_days must be at least 2"):
         client.get_meter_readings(
             "test_meter",
             "2025-01-01",
             "2025-01-04",
             paginate=True,
-            chunk_days=0,
+            chunk_days=1,
         )
 
 
@@ -204,168 +206,54 @@ def test_get_meter_readings_paginated_missing_zp(
         datum_bis: str,  # noqa: ARG001
     ) -> dict:
         # Return a dict without the 'zaehlpunkt' key.
-        return {"zaehlwerke": [{"obisCode": "1-1:1.8.0", "messwerte": []}]}
+        return {
+            "zaehlwerke": [{"obisCode": "1-1:1.8.0", "messwerte": [{"messwert": 400}]}],
+        }
 
     monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_missing_zp)
     result = client.get_meter_readings(
         "dummy",
         "2025-01-01",
-        "2025-01-03",
+        "2025-01-04",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
     )
     assert result is None
 
 
-def fake_get_messwerte_multi_chunk(
-    wertetyp: str,
-    zaehlpunkt: str | None,
-    datum_von: str,
-    datum_bis: str,
-) -> dict | None:
-    """Fake get_messwerte to simulate chunk responses for a single meter "TEST_METER" for METER_READ.
-
-    Returns different data depending on the provided date range (chunk).
-    """  # noqa: E501
-    if wertetyp != "METER_READ" or zaehlpunkt != "TEST_METER":
-        return None
-
-    if datum_von == "2025-01-01" and datum_bis == "2025-01-02":
-        # Chunk 1: obisCode OBIS1, one measurement.
-        return {
-            "zaehlpunkt": "TEST_METER",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "OBIS1",
-                    "messwerte": [
-                        {
-                            "messwert": 100,
-                            "zeitVon": "2025-01-01T23:00:00.000Z",
-                            "zeitBis": "2025-01-02T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-02" and datum_bis == "2025-01-03":
-        # Chunk 2: obisCode OBIS2, one measurement.
-        return {
-            "zaehlpunkt": "TEST_METER",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "OBIS2",
-                    "messwerte": [
-                        {
-                            "messwert": 200,
-                            "zeitVon": "2025-01-02T23:00:00.000Z",
-                            "zeitBis": "2025-01-03T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-03" and datum_bis == "2025-01-04":
-        # Chunk 3: obisCode OBIS1 again, a different measurement.
-        return {
-            "zaehlpunkt": "TEST_METER",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "OBIS1",
-                    "messwerte": [
-                        {
-                            "messwert": 150,
-                            "zeitVon": "2025-01-03T23:00:00.000Z",
-                            "zeitBis": "2025-01-04T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-01" and datum_bis == "2025-01-04":
-        # Full response: OBIS1 with both measurements merged and OBIS2 as provided.
-        return {
-            "zaehlpunkt": "TEST_METER",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "OBIS1",
-                    "messwerte": [
-                        {
-                            "messwert": 100,
-                            "zeitVon": "2025-01-01T23:00:00.000Z",
-                            "zeitBis": "2025-01-02T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                        {
-                            "messwert": 150,
-                            "zeitVon": "2025-01-03T23:00:00.000Z",
-                            "zeitBis": "2025-01-04T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-                {
-                    "einheit": "WH",
-                    "obisCode": "OBIS2",
-                    "messwerte": [
-                        {
-                            "messwert": 200,
-                            "zeitVon": "2025-01-02T23:00:00.000Z",
-                            "zeitBis": "2025-01-03T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    return None
-
-
-def test_get_meter_readings_paginated_found_none(
+def test_get_meter_readings_paginated_empty_data(
     monkeypatch: pytest.MonkeyPatch,
     client: WNAPIClient,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test that get_meter_readings with pagination correctly aggregates responses when multiple obisCodes are encountered.
+    """Test that get_meter_readings with pagination breaks the loop if data is empty and writes an info.
 
-    This test simulates three chunks:
-      - Chunk 1: returns obisCode "OBIS1" (one measurement).
-      - Chunk 2: returns obisCode "OBIS2" (one measurement).
-      - Chunk 3: returns obisCode "OBIS1" again (a different measurement).
-
-    The aggregated result for a single meter should include:
-      - One merged entry for OBIS1 with two measurements.
-      - One separate entry for OBIS2.
-
-    Args:
-        monkeypatch (pytest.MonkeyPatch): The monkeypatch fixture.
-        client (WNAPIClient): A WNAPIClient instance.
-
+    This test simulates an API response for a chunk with empty messwerte. The aggregation logic
+    should stop the data collecting, assuming no data is left to retrieve.
     """  # noqa: E501
-    expected_obis1_measurements_amount = 2
-    monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_multi_chunk)
+    caplog.set_level(logging.INFO)
+    def fake_get_messwerte_missing_zp(
+        wertetyp: str,  # noqa: ARG001
+        zaehlpunkt: str | None,  # noqa: ARG001
+        datum_von: str,  # noqa: ARG001
+        datum_bis: str,  # noqa: ARG001
+    ) -> dict:
+        # Return a dict without the 'zaehlpunkt' key.
+        return {
+            "zaehlpunkt": "123",
+            "zaehlwerke": [{"obisCode": "1-1:1.8.0", "messwerte": []}],
+        }
+
+    monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_missing_zp)
     result = client.get_meter_readings(
-        "TEST_METER",
+        "dummy",
         "2025-01-01",
         "2025-01-04",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
     )
-    # For a single meter, the paginated method should return a dict.
-    assert isinstance(result, dict)
-    zaehlwerke = result.get("zaehlwerke", [])
-    # Expect two distinct obisCodes: "OBIS1" and "OBIS2"
-    obis_codes = {zw.get("obisCode") for zw in zaehlwerke}
-    assert obis_codes == {"OBIS1", "OBIS2"}
-    # Verify that for OBIS1, the merged "messwerte" list contains 2 measurements.
-    for zw in zaehlwerke:
-        if zw.get("obisCode") == "OBIS1":
-            assert len(zw.get("messwerte", [])) == expected_obis1_measurements_amount
+    assert result is None
+    assert "No messwerte returned for chunk" in caplog.text
 
 
 def test_get_meter_readings_paginated_no_data(
@@ -397,7 +285,181 @@ def test_get_meter_readings_paginated_no_data(
         "2025-01-01",
         "2025-01-04",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
     )
     assert result is None
-    assert "No data returned for chunk" in caplog.text
+    assert "No or invalid data returned for chunk" in caplog.text
+
+def fake_get_messwerte_multi_chunk(
+    wertetyp: str,
+    zaehlpunkt: str | None,
+    datum_von: str,
+    datum_bis: str,
+) -> dict | None:
+    """Fake get_messwerte to simulate chunk responses for a single meter "TEST_METER" for METER_READ.
+
+    Returns different data depending on the provided date range (chunk).
+    """  # noqa: E501
+    if wertetyp != "METER_READ" or zaehlpunkt != "TEST_METER":
+        return None
+
+    if datum_von == "2025-01-01" and datum_bis == "2025-01-02":
+        return {
+            "zaehlpunkt": "TEST_METER",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "OBIS1",
+                    "messwerte": [
+                        {
+                            "messwert": 90,
+                            "zeitVon": "2025-01-01T23:00:00.000Z",
+                            "zeitBis": "2025-01-02T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 80,
+                            "zeitVon": "2025-01-02T23:00:00.000Z",
+                            "zeitBis": "2025-01-03T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-03" and datum_bis == "2025-01-04":
+        return {
+            "zaehlpunkt": "TEST_METER",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "OBIS1",
+                    "messwerte": [
+                        {
+                            "messwert": 100,
+                            "zeitVon": "2025-01-03T23:00:00.000Z",
+                            "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 110,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+                {
+                    "einheit": "WH",
+                    "obisCode": "OBIS2",
+                    "messwerte": [
+                        {
+                            "messwert": 120,
+                            "zeitVon": "2025-01-03T23:00:00.000Z",
+                            "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 130,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-01" and datum_bis == "2025-01-04":
+        return {
+            "zaehlpunkt": "TEST_METER",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "OBIS1",
+                    "messwerte": [
+                        {
+                            "messwert": 90,
+                            "zeitVon": "2025-01-01T23:00:00.000Z",
+                            "zeitBis": "2025-01-02T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 80,
+                            "zeitVon": "2025-01-02T23:00:00.000Z",
+                            "zeitBis": "2025-01-03T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 100,
+                            "zeitVon": "2025-01-03T23:00:00.000Z",
+                            "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 110,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+                {
+                    "einheit": "WH",
+                    "obisCode": "OBIS2",
+                    "messwerte": [
+                        {
+                            "messwert": 120,
+                            "zeitVon": "2025-01-03T23:00:00.000Z",
+                            "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 130,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    return None
+
+def test_get_meter_readings_paginated_found_none(
+    monkeypatch: pytest.MonkeyPatch,
+    client: WNAPIClient,
+) -> None:
+    """Test that get_meter_readings with pagination correctly aggregates responses when multiple obisCodes are encountered.
+
+    This test simulates three chunks:
+      - Chunk 1: returns data with obisCode "OBIS1".
+      - Chunk 2: returns data with two obisCodes "OBIS1" and "OBIS2".
+
+    The aggregated result for a single meter should include:
+      - Merged entries for OBIS1.
+      - Entries for OBIS2.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): The monkeypatch fixture.
+        client (WNAPIClient): A WNAPIClient instance.
+
+    """  # noqa: E501
+    expected_obis1_measurements_amount = 4
+    monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_multi_chunk)
+    result = client.get_meter_readings(
+        "TEST_METER",
+        "2025-01-01",
+        "2025-01-04",
+        paginate=True,
+        chunk_days=2,
+    )
+    # For a single meter, the paginated method should return a dict.
+    assert isinstance(result, dict)
+    zaehlwerke = result.get("zaehlwerke", [])
+    # Expect two distinct obisCodes: "OBIS1" and "OBIS2"
+    obis_codes = {zw.get("obisCode") for zw in zaehlwerke}
+    assert obis_codes == {"OBIS1", "OBIS2"}
+    # Verify that for OBIS1, the merged "messwerte" list contains 2 measurements.
+    for zw in zaehlwerke:
+        if zw.get("obisCode") == "OBIS1":
+            assert len(zw.get("messwerte", [])) == expected_obis1_measurements_amount

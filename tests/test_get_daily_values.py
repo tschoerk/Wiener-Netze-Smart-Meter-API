@@ -34,7 +34,7 @@ def fake_get_messwerte_day(
     """  # noqa: E501
     if wertetyp != "DAY" or zaehlpunkt != "test_meter":
         return None
-    if datum_von == "2025-01-01" and datum_bis == "2025-01-04":
+    if datum_von == "2025-01-01" and datum_bis == "2025-01-06":
         return {
             "zaehlpunkt": "test_meter",
             "zaehlwerke": [
@@ -43,11 +43,77 @@ def fake_get_messwerte_day(
                     "obisCode": "1-1:1.9.0",
                     "messwerte": [
                         {
+                            "messwert": 900,
+                            "zeitVon": "2024-31-12T23:00:00.000Z",
+                            "zeitBis": "2025-01-01T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
                             "messwert": 1000,
                             "zeitVon": "2025-01-01T23:00:00.000Z",
                             "zeitBis": "2025-01-02T23:00:00.000Z",
                             "qualitaet": "VAL",
                         },
+                        {
+                            "messwert": 1100,
+                            "zeitVon": "2025-01-02T23:00:00.000Z",
+                            "zeitBis": "2025-01-03T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 1200,
+                            "zeitVon": "2025-01-03T23:00:00.000Z",
+                            "zeitBis": "2025-01-04T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 1300,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 1400,
+                            "zeitVon": "2025-01-05T23:00:00.000Z",
+                            "zeitBis": "2025-01-06T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-05" and datum_bis == "2025-01-06":
+        return {
+            "zaehlpunkt": "test_meter",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "1-1:1.9.0",
+                    "messwerte": [
+                        {
+                            "messwert": 1300,
+                            "zeitVon": "2025-01-04T23:00:00.000Z",
+                            "zeitBis": "2025-01-05T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 1400,
+                            "zeitVon": "2025-01-05T23:00:00.000Z",
+                            "zeitBis": "2025-01-06T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-03" and datum_bis == "2025-01-04":
+        return {
+            "zaehlpunkt": "test_meter",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "1-1:1.9.0",
+                    "messwerte": [
                         {
                             "messwert": 1100,
                             "zeitVon": "2025-01-02T23:00:00.000Z",
@@ -73,45 +139,15 @@ def fake_get_messwerte_day(
                     "obisCode": "1-1:1.9.0",
                     "messwerte": [
                         {
+                            "messwert": 900,
+                            "zeitVon": "2024-31-12T23:00:00.000Z",
+                            "zeitBis": "2025-01-01T23:00:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
                             "messwert": 1000,
                             "zeitVon": "2025-01-01T23:00:00.000Z",
                             "zeitBis": "2025-01-02T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-02" and datum_bis == "2025-01-03":
-        return {
-            "zaehlpunkt": "test_meter",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "1-1:1.9.0",
-                    "messwerte": [
-                        {
-                            "messwert": 1100,
-                            "zeitVon": "2025-01-02T23:00:00.000Z",
-                            "zeitBis": "2025-01-03T23:00:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-03" and datum_bis == "2025-01-04":
-        return {
-            "zaehlpunkt": "test_meter",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "1-1:1.9.0",
-                    "messwerte": [
-                        {
-                            "messwert": 1200,
-                            "zeitVon": "2025-01-03T23:00:00.000Z",
-                            "zeitBis": "2025-01-04T23:00:00.000Z",
                             "qualitaet": "VAL",
                         },
                     ],
@@ -127,8 +163,8 @@ def test_get_daily_values_non_paginated(
 ) -> None:
     """Test that get_daily_values without pagination returns the full-range response as a dict for a single meter."""  # noqa: E501
     monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_day)
-    result = client.get_daily_values("test_meter", "2025-01-01", "2025-01-04")
-    expected = fake_get_messwerte_day("DAY", "test_meter", "2025-01-01", "2025-01-04")
+    result = client.get_daily_values("test_meter", "2025-01-01", "2025-01-06")
+    expected = fake_get_messwerte_day("DAY", "test_meter", "2025-01-01", "2025-01-06")
     assert isinstance(result, dict)
     assert result == expected
 
@@ -143,13 +179,13 @@ def test_get_daily_values_paginated(
     returns the same result.
     """  # noqa: E501
     monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_day)
-    expected = fake_get_messwerte_day("DAY", "test_meter", "2025-01-01", "2025-01-04")
+    expected = fake_get_messwerte_day("DAY", "test_meter", "2025-01-01", "2025-01-06")
     result = client.get_daily_values(
         "test_meter",
         "2025-01-01",
-        "2025-01-04",
+        "2025-01-06",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
     )
     assert isinstance(result, dict)
     assert result == expected

@@ -30,7 +30,7 @@ def fake_get_messwerte_qh(
     """Fake get_messwerte for QUARTER_HOUR tests for a single meter 'test_meter'.
 
     Simulates different responses depending on the provided date range:
-      - For the full range (2025-01-01 to 2025-01-04), returns a full aggregated response.
+      - For the full range (2025-01-01 to 2025-01-05), returns a full aggregated response.
       - For chunk sub-ranges, returns responses with a subset of the measurements.
 
     Args:
@@ -71,6 +71,12 @@ def fake_get_messwerte_qh(
                             "zeitBis": "2025-01-03T00:45:00.000Z",
                             "qualitaet": "VAL",
                         },
+                        {
+                            "messwert": 40,
+                            "zeitVon": "2025-01-04T00:30:00.000Z",
+                            "zeitBis": "2025-01-04T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
                     ],
                 },
             ],
@@ -83,25 +89,6 @@ def fake_get_messwerte_qh(
                     "einheit": "WH",
                     "obisCode": "1-1:1.9.0",
                     "messwerte": [
-                        {
-                            "messwert": 10,
-                            "zeitVon": "2025-01-01T00:00:00.000Z",
-                            "zeitBis": "2025-01-01T00:15:00.000Z",
-                            "qualitaet": "VAL",
-                        },
-                    ],
-                },
-            ],
-        }
-    if datum_von == "2025-01-02" and datum_bis == "2025-01-03":
-        return {
-            "zaehlpunkt": "test_meter",
-            "zaehlwerke": [
-                {
-                    "einheit": "WH",
-                    "obisCode": "1-1:1.9.0",
-                    "messwerte": [
-                        # This simulates a chunk where some previous chunk data is also present.  # noqa: E501
                         {
                             "messwert": 10,
                             "zeitVon": "2025-01-01T00:00:00.000Z",
@@ -130,6 +117,108 @@ def fake_get_messwerte_qh(
                             "messwert": 30,
                             "zeitVon": "2025-01-03T00:30:00.000Z",
                             "zeitBis": "2025-01-03T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 40,
+                            "zeitVon": "2025-01-04T00:30:00.000Z",
+                            "zeitBis": "2025-01-04T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-01" and datum_bis == "2025-01-05":
+        return {
+            "zaehlpunkt": "test_meter",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "1-1:1.9.0",
+                    "messwerte": [
+                        {
+                            "messwert": 10,
+                            "zeitVon": "2025-01-01T00:00:00.000Z",
+                            "zeitBis": "2025-01-01T00:15:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 20,
+                            "zeitVon": "2025-01-02T00:15:00.000Z",
+                            "zeitBis": "2025-01-02T00:30:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 30,
+                            "zeitVon": "2025-01-03T00:30:00.000Z",
+                            "zeitBis": "2025-01-03T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 40,
+                            "zeitVon": "2025-01-04T00:30:00.000Z",
+                            "zeitBis": "2025-01-04T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 50,
+                            "zeitVon": "2025-01-05T00:30:00.000Z",
+                            "zeitBis": "2025-01-05T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-01" and datum_bis == "2025-01-03":
+        return {
+            "zaehlpunkt": "test_meter",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "1-1:1.9.0",
+                    "messwerte": [
+                        {
+                            "messwert": 10,
+                            "zeitVon": "2025-01-01T00:00:00.000Z",
+                            "zeitBis": "2025-01-01T00:15:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 20,
+                            "zeitVon": "2025-01-02T00:15:00.000Z",
+                            "zeitBis": "2025-01-02T00:30:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 30,
+                            "zeitVon": "2025-01-03T00:30:00.000Z",
+                            "zeitBis": "2025-01-03T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                    ],
+                },
+            ],
+        }
+    if datum_von == "2025-01-04" and datum_bis == "2025-01-05":
+        return {
+            "zaehlpunkt": "test_meter",
+            "zaehlwerke": [
+                {
+                    "einheit": "WH",
+                    "obisCode": "1-1:1.9.0",
+                    "messwerte": [
+                        {
+                            "messwert": 40,
+                            "zeitVon": "2025-01-04T00:30:00.000Z",
+                            "zeitBis": "2025-01-04T00:45:00.000Z",
+                            "qualitaet": "VAL",
+                        },
+                        {
+                            "messwert": 50,
+                            "zeitVon": "2025-01-05T00:30:00.000Z",
+                            "zeitBis": "2025-01-05T00:45:00.000Z",
                             "qualitaet": "VAL",
                         },
                     ],
@@ -162,10 +251,11 @@ def test_get_quarter_hour_values_paginated(
 ) -> None:
     """Test that get_quarter_hour_values with pagination aggregates chunk responses correctly for a single meter.
 
-    The date range is split into 3 chunks:
+    The date range is split into 4 chunks:
       - 2025-01-01 to 2025-01-02,
       - 2025-01-02 to 2025-01-03,
       - 2025-01-03 to 2025-01-04.
+      - 2025-01-04 to 2025-01-05.
     The aggregated result should match the full-range response.
 
     Args:
@@ -185,7 +275,42 @@ def test_get_quarter_hour_values_paginated(
         "2025-01-01",
         "2025-01-04",
         paginate=True,
-        chunk_days=1,
+        chunk_days=2,
+    )
+    # For a single meter, paginated should return a dict.
+    assert isinstance(result, dict)
+    assert result == expected_full
+
+def test_get_quarter_hour_values_paginated_one_day_left(
+    monkeypatch: pytest.MonkeyPatch,
+    client: WNAPIClient,
+) -> None:
+    """Test that get_quarter_hour_values with pagination aggregates chunk responses correctly for a single meter.
+
+    This tests if a chunk where 1 day would be left in the end, is extended by one day.
+    The date range is split into 2 chunks:
+      - 2025-01-01 to 2025-01-03,
+      - 2025-01-04 to 2025-01-05,
+    The aggregated result should match the full-range response.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): The monkeypatch fixture.
+        client (WNAPIClient): A WNAPIClient instance.
+
+    """  # noqa: E501
+    monkeypatch.setattr(client, "get_messwerte", fake_get_messwerte_qh)
+    expected_full = fake_get_messwerte_qh(
+        "QUARTER_HOUR",
+        "test_meter",
+        "2025-01-01",
+        "2025-01-05",
+    )
+    result = client.get_quarter_hour_values(
+        "test_meter",
+        "2025-01-01",
+        "2025-01-05",
+        paginate=True,
+        chunk_days=2,
     )
     # For a single meter, paginated should return a dict.
     assert isinstance(result, dict)
