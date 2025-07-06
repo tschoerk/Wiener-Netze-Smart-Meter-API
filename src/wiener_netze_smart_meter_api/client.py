@@ -176,6 +176,7 @@ class WNAPIClient:
                 return None
 
             headers = {
+                "Accept": "application/json",
                 "Authorization": f"Bearer {token}",
                 "x-Gateway-APIKey": self.api_key,
             }
